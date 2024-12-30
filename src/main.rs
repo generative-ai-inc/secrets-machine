@@ -39,11 +39,14 @@ async fn handle_run_mode(matches: ArgMatches) {
 
     let mut command_args = "".to_string();
 
-    let mut command_name = None;
+    let mut command_name: String = "".to_string();
     if let Some(run_matches) = matches.subcommand_matches("run") {
         if let Some(passed_command_name) = run_matches.get_one::<String>("command") {
-            command_name = Some(passed_command_name.to_owned());
+            command_name = passed_command_name.to_owned();
             logging::info(&format!("Command: {}", passed_command_name)).await;
+        } else {
+            logging::error("Unable to get command").await;
+            std::process::exit(1);
         }
 
         if let Some(passed_command_args) = run_matches.get_many::<String>("command_args") {
@@ -58,9 +61,7 @@ async fn handle_run_mode(matches: ArgMatches) {
     let config = config::parse(None).await;
 
     // Check that the command is in the config
-    if let Some(ref asserted_command) = command_name {
-        commands::check(&commands_config, &asserted_command).await;
-    }
+    commands::check(&commands_config, &command_name).await;
 
     let secrets = keyring::get_secrets().await;
 
@@ -73,12 +74,10 @@ async fn handle_exec_mode(matches: ArgMatches) {
     let mut command_to_run: String = "".to_string();
 
     if let Some(exec_matches) = matches.subcommand_matches("exec") {
-        if let Some(e) = exec_matches.get_many::<String>("command") {
-            for arg in e {
-                command_to_run = command_to_run + arg + " ";
-            }
+        if let Some(passed_command_to_run) = exec_matches.get_one::<String>("command") {
+            command_to_run = passed_command_to_run.to_owned();
         } else {
-            logging::error("No command provided").await;
+            logging::error("Unable to get command").await;
             std::process::exit(1);
         }
     }
@@ -154,5 +153,6 @@ async fn main() {
         }
     } else {
         cli::build().print_help().unwrap();
+        std::process::exit(1);
     }
 }

@@ -16,7 +16,7 @@ pub async fn check(config: &Config, secrets: &serde_json::Value) {
     }
 }
 
-pub async fn start(
+pub async fn sync(
     config: &Config,
     secrets: &serde_json::Value,
     env_vars: &mut Vec<(String, String, String)>,

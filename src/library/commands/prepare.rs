@@ -28,9 +28,11 @@ pub async fn prepare(config: &Config, secrets: &serde_json::Value) {
         ));
     }
 
-    secrets_sources::start(config, secrets, &mut env_vars).await;
+    secrets_sources::sync(config, secrets, &mut env_vars).await;
 
     env_vars::set(&env_vars).await;
 
-    env_vars::print_variables_box(original_env_vars, &env_vars).await;
+    if config.general.print_secrets_table {
+        env_vars::print_variables_box(original_env_vars, &env_vars).await;
+    }
 }

@@ -15,7 +15,7 @@ pub async fn execute(config: Config, secrets: serde_json::Value, command_to_run:
     logging::nl().await;
     logging::print_color(logging::BG_GREEN, " Executing command ").await;
     logging::info(&format!(
-        "Running: {}",
+        "Executing: {}",
         env_vars::replace_env_vars(command_to_run, true).await
     ))
     .await;

@@ -27,6 +27,11 @@ pub async fn parse(config_path: Option<PathBuf>) -> Config {
     let toml_content = match toml_content {
         Ok(content) => content,
         Err(_) => {
+            logging::info(&format!(
+                "Creating default config file at {}",
+                config_path.display()
+            ))
+            .await;
             return create_default_config(config_path).await;
         }
     };

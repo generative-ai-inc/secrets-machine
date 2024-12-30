@@ -1,0 +1,44 @@
+[package]
+  name         = "sm"
+  version      = "0.1.0"
+  edition      = "2021"
+  rust-version = "1.80.0"
+  build        = "build.rs"
+
+[build-dependencies]
+  built = "0.7.5"
+
+[dependencies]
+  base64 = "0.22.1"
+  clap = { version = "4.5.21", features = ["derive", "cargo"] }
+  clap_complete = "4.5.38"
+  dirs = "5.0.1"
+  dotenv = "0.15.0"
+  fastrand = "2.2.0"
+  futures = "0.3.31"
+  keyring = { version = "3.6.1", features = [
+    "async-secret-service",
+    "apple-native",
+    "windows-native",
+    "async-io",
+    "crypto-rust",
+  ] }
+  lazy_static = "1.5.0"
+  os_info = "3.8.2"
+  regex = "1.11.1"
+  reqwest = { version = "0.12.9", features = [
+    "json",
+    "rustls-tls",
+  ], default-features = false }
+  rpassword = "7.3.1"
+  serde = "1.0.215"
+  serde_json = { version = "1.0.133", features = ["std"] }
+  tokio = { version = "1.41.1", features = [
+    "macros",
+    "signal",
+    "fs",
+    "process",
+    "rt-multi-thread",
+    "io-util",
+  ] }
+  toml = "0.8.19"

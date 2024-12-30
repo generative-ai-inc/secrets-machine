@@ -24,10 +24,10 @@ jobs:
 
     steps:
       - name: Check out code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        uses: actions/checkout@v4.2.2
 
       - name: Rust setup
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@1ff72ee08e3cb84d84adba594e0a297990fc1ed3
 
       - name: Rust cache
         uses: swatinem/rust-cache@f0deed1e0edfc6a9be95417288c0e1099b1eeec3

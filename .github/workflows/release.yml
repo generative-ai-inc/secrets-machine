@@ -16,56 +16,50 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        platform: [macos-latest, ubuntu-latest]
-    runs-on: ${{ matrix.platform }}
+        include:
+          - os: ubuntu-20.04
+            targets: ["x86_64-unknown-linux-gnu", "aarch64-unknown-linux-gnu"]
+            dependencies: |
+              sudo apt-get update && sudo apt-get install -y gcc-aarch64-linux-gnu
+          - os: macos-latest
+            targets: ["x86_64-apple-darwin", "aarch64-apple-darwin"]
+    runs-on: ${{ matrix.os }}
 
     steps:
       - name: Check out code
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
 
       - name: Rust setup
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Install dependencies (macOS only)
-        if: matrix.platform == 'macos-latest'
+      - name: Rust cache
+        uses: swatinem/rust-cache@f0deed1e0edfc6a9be95417288c0e1099b1eeec3
+        with:
+          shared-key: "release-${{ matrix.os }}"
+
+      - name: Install dependencies
+        if: matrix.dependencies != ''
+        run: ${{ matrix.dependencies }}
+
+      - name: Add targets
         run: |
-          rustup target add aarch64-apple-darwin
-          rustup target add x86_64-apple-darwin
+          for target in ${{ join(matrix.targets, ' ') }}; do
+            rustup target add $target
+          done
 
-      - name: Install dependencies (Linux only)
-        if: matrix.platform == 'ubuntu-latest'
+      - name: Build targets
         run: |
-          sudo apt-get update && sudo apt-get install -y gcc-aarch64-linux-gnu
-          rustup target add aarch64-unknown-linux-gnu
-          rustup target add x86_64-unknown-linux-gnu
+          for target in ${{ join(matrix.targets, ' ') }}; do
+            cargo build --release --target $target
+          done
 
-      - name: Build x86_64 (Linux)
-        if: matrix.platform == 'ubuntu-latest'
-        run: cargo build --release --target x86_64-unknown-linux-gnu
-
-      - name: Build aarch64 (Linux)
-        if: matrix.platform == 'ubuntu-latest'
-        run: cargo build --release --target aarch64-unknown-linux-gnu
-
-      - name: Build for ARM (macOS)
-        if: matrix.platform == 'macos-latest'
-        run: cargo build --release --target x86_64-apple-darwin
-
-      - name: Build for Intel (macOS)
-        if: matrix.platform == 'macos-latest'
-        run: cargo build --release --target aarch64-apple-darwin
-
-      - name: Copy binary (macOS)
-        if: matrix.platform == 'macos-latest'
+      - name: Prepare release artifacts
         run: |
-          cp target/aarch64-apple-darwin/release/sm target/release/secrets-machine-arm64-darwin
-          cp target/x86_64-apple-darwin/release/sm target/release/secrets-machine-x86_64-darwin
-
-      - name: Copy binary (Linux)
-        if: matrix.platform == 'ubuntu-latest'
-        run: |
-          cp target/x86_64-unknown-linux-gnu/release/sm target/release/secrets-machine-x86_64-linux
-          cp target/aarch64-unknown-linux-gnu/release/sm target/release/secrets-machine-aarch64-linux
+          mkdir -p artifacts
+          for target in ${{ join(matrix.targets, ' ') }}; do
+            target_name=$(echo $target | tr '-' '_')
+            cp "target/$target/release/sm" "artifacts/secrets-machine_${target_name}"
+          done
 
       - name: Release
         uses: softprops/action-gh-release@v2
@@ -73,8 +67,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           draft: true
-          files: |
-            target/release/secrets-machine-arm64-darwin
-            target/release/secrets-machine-x86_64-darwin
-            target/release/secrets-machine-aarch64-linux
-            target/release/secrets-machine-x86_64-linux
+          files: artifacts/secrets-machine_*
+
+      - name: Clean up
+        run: rm -rf artifacts

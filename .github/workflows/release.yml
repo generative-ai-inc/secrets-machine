@@ -57,17 +57,24 @@ jobs:
         run: |
           mkdir -p artifacts
           for target in ${{ join(matrix.targets, ' ') }}; do
-            target_name=$(echo $target | tr '-' '_')
-            cp "target/$target/release/sm" "artifacts/secrets-machine_${target_name}"
+            # Remove vendor names ('-apple' and '-unknown') from the target name
+            target_name=$(echo $target | sed 's/-apple//; s/-unknown//')
+
+            # Remove platform names ('-gnu', 'musl') from the target name
+            target_name=$(echo $target_name | sed 's/-gnu//; s/-musl//')
+
+            echo "target_name: $target_name"
+
+            cp "target/$target/release/sm" "artifacts/secrets-machine-${target_name}"
           done
 
       - name: Release
-        uses: softprops/action-gh-release@7b4da11513bf3f43f9999e90eabced41ab8bb048
+        uses: softprops/action-gh-release@e7a8f85e1c67a31e6ed99a94b41bd0b71bbee6b8
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           draft: true
-          files: artifacts/secrets-machine_*
+          files: artifacts/secrets-machine*
 
       - name: Clean up
         run: rm -rf artifacts

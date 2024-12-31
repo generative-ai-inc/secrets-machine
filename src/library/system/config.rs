@@ -13,27 +13,27 @@ async fn create_default_config(config_path: PathBuf) -> Config {
 
 /// Checks that the config file is set up correctly
 pub async fn parse(config_path: Option<PathBuf>) -> Config {
-    let config_path = match config_path {
-        Some(path) => path,
-        None => {
-            let home_dir = dirs::home_dir().expect("Failed to get home directory");
-            home_dir.join(".config/secrets-machine/config.toml")
-        }
+    // If the config path is not provided, use the default path
+    let config_path = if let Some(path) = config_path {
+        path
+    } else {
+        let Some(home_dir) = dirs::home_dir() else {
+            logging::error("Failed to get home directory").await;
+            std::process::exit(1);
+        };
+        home_dir.join(".config/secrets-machine/config.toml")
     };
 
     // Read the TOML file
-    let toml_content = fs::read_to_string(&config_path).await;
+    let fs_read_result = fs::read_to_string(&config_path).await;
 
-    let toml_content = match toml_content {
-        Ok(content) => content,
-        Err(_) => {
-            logging::info(&format!(
-                "Creating default config file at {}",
-                config_path.display()
-            ))
-            .await;
-            return create_default_config(config_path).await;
-        }
+    let Ok(toml_content) = fs_read_result else {
+        logging::info(&format!(
+            "Creating default config file at {}",
+            config_path.display()
+        ))
+        .await;
+        return create_default_config(config_path).await;
     };
 
     // Parse the TOML content
@@ -49,7 +49,7 @@ pub async fn parse(config_path: Option<PathBuf>) -> Config {
         }
 
         Err(e) => {
-            logging::error(&format!("Error parsing config file: {}", e)).await;
+            logging::error(&format!("Error parsing config file: {e}")).await;
             std::process::exit(1);
         }
     };

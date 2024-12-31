@@ -18,7 +18,7 @@ async fn test_legacy_bitwarden_parse_env_vars() {
 
     let env_vars = bitwarden::get_env_variables(Some(&credentials), &json!({})).await;
 
-    assert!(env_vars.len() > 0);
+    assert!(!env_vars.is_empty());
 }
 
 #[tokio::test]
@@ -32,7 +32,7 @@ async fn test_bitwarden_parse_env_vars() {
         match secrets_source {
             SecretsSource::Bitwarden(credentials) => {
                 let env_vars = bitwarden::get_env_variables(Some(credentials), &json!({})).await;
-                assert!(env_vars.len() > 0);
+                assert!(!env_vars.is_empty());
             }
         }
     }

@@ -9,6 +9,12 @@ use crate::{
 
 use super::prepare;
 
+/// Executes a command with the secrets machine
+///
+/// # Panics
+/// - If the command fails to execute
+/// - If function fails to get the output of the command
+/// - If function fails to kill the process
 pub async fn execute(config: Config, secrets: serde_json::Value, command_to_run: &str) {
     prepare(&config, &secrets).await;
 
@@ -16,7 +22,7 @@ pub async fn execute(config: Config, secrets: serde_json::Value, command_to_run:
     logging::print_color(logging::BG_GREEN, " Executing command ").await;
     logging::info(&format!(
         "Executing: {}",
-        env_vars::replace_env_vars(command_to_run, true).await
+        env_vars::replace(command_to_run, true).await
     ))
     .await;
 
@@ -37,7 +43,7 @@ pub async fn execute(config: Config, secrets: serde_json::Value, command_to_run:
         tokio::signal::ctrl_c().await.unwrap();
         logging::nl().await;
         logging::info("👍 Shutting down gracefully...").await;
-        let result = Command::new("kill").arg(&pid.to_string()).status().await;
+        let result = Command::new("kill").arg(pid.to_string()).status().await;
 
         match result {
             Ok(_) => {
@@ -45,7 +51,7 @@ pub async fn execute(config: Config, secrets: serde_json::Value, command_to_run:
                 std::process::exit(0);
             }
             Err(e) => {
-                logging::error(&format!("🛑 Failed to kill process: {}", e)).await;
+                logging::error(&format!("🛑 Failed to kill process: {e}")).await;
                 std::process::exit(1);
             }
         }
@@ -62,7 +68,7 @@ pub async fn execute(config: Config, secrets: serde_json::Value, command_to_run:
             }
         }
         Err(e) => {
-            logging::error(&format!("🛑 Failed to wait for command execution: {}", e)).await;
+            logging::error(&format!("🛑 Failed to wait for command execution: {e}")).await;
             std::process::exit(1);
         }
     }

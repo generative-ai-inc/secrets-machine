@@ -27,8 +27,8 @@ Type "help", "copyright", "credits" or "license" for more information.
 Secrets are read from the following sources, in this order:
 
 1. A dotenv file (.env)
-2. Secret Sources (e.g. Bitwarden)
-3. Environment variables
+2. Environment variables
+3. Secret Sources (e.g. Bitwarden)
 4. Keyring
 
 Supported platforms (Contributions welcome!):

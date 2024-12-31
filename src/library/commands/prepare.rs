@@ -5,9 +5,10 @@ use crate::{
     models::config::Config,
 };
 
-/// Prepare the environment for the service to run.
-/// - Add features
-/// - Set the environment variables
+/// Sync secrets and set environment variables
+///
+/// # Panics
+/// - If the environment variables fail to be set
 pub async fn prepare(config: &Config, secrets: &serde_json::Value) {
     let vars_iter = env::vars();
 
@@ -30,7 +31,7 @@ pub async fn prepare(config: &Config, secrets: &serde_json::Value) {
 
     secrets_sources::sync(config, secrets, &mut env_vars).await;
 
-    env_vars::set(&env_vars).await;
+    env_vars::set(&env_vars);
 
     if config.general.print_secrets_table {
         env_vars::print_variables_box(original_env_vars, &env_vars).await;

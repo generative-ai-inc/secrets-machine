@@ -41,11 +41,11 @@ async fn handle_run_mode(matches: ArgMatches) {
 
     let mut command_name: String = String::new();
     if let Some(run_matches) = matches.subcommand_matches("run") {
-        if let Some(passed_command_name) = run_matches.get_one::<String>("command") {
+        if let Some(passed_command_name) = run_matches.get_one::<String>("command_name") {
             passed_command_name.clone_into(&mut command_name);
             logging::info(&format!("Command: {passed_command_name}")).await;
         } else {
-            logging::error("Unable to get command").await;
+            logging::error("Unable to get command from run mode").await;
             std::process::exit(1);
         }
 
@@ -77,7 +77,7 @@ async fn handle_exec_mode(matches: ArgMatches) {
         if let Some(passed_command_to_run) = exec_matches.get_one::<String>("command") {
             passed_command_to_run.clone_into(&mut command_to_run);
         } else {
-            logging::error("Unable to get command").await;
+            logging::error("Unable to get command from exec mode").await;
             std::process::exit(1);
         }
     }

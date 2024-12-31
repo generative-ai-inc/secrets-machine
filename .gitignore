@@ -43,3 +43,5 @@ bws*
 target
 meili_data
 supabase
+
+tests/test_results

@@ -1,4 +1,4 @@
-use std::env;
+use std::{env, error::Error};
 
 use tokio::process::Command;
 
@@ -11,12 +11,20 @@ use super::prepare;
 
 /// Executes a command with the secrets machine
 ///
-/// # Panics
-/// - If the command fails to execute
-/// - If function fails to get the output of the command
-/// - If function fails to kill the process
-pub async fn execute(config: Config, secrets: serde_json::Value, command_to_run: &str) {
-    prepare(&config, &secrets).await;
+/// # Errors
+/// - When `return_output` is true:
+///   - If the command fails to execute
+///   - If function fails to get the output of the command
+///   - If function fails to kill the process
+///
+/// - When `return_output` is false:
+///   - Never
+pub async fn execute(
+    config: Config,
+    secrets: serde_json::Value,
+    command_to_run: &str,
+) -> Result<(), Box<dyn Error>> {
+    prepare(&config, &secrets).await?;
 
     logging::nl().await;
     logging::print_color(logging::BG_GREEN, " Executing command ").await;
@@ -27,49 +35,56 @@ pub async fn execute(config: Config, secrets: serde_json::Value, command_to_run:
     .await;
 
     // Get the default shell from the SHELL environment variable
-    let default_shell = env::var("SHELL").unwrap_or_else(|_| "/bin/sh".to_string());
+    let default_shell = match env::var("SHELL") {
+        Ok(shell) => shell,
+        Err(_) => "/bin/sh".to_string(),
+    };
 
-    let child: tokio::process::Child = Command::new(default_shell)
+    let Ok(child) = Command::new(default_shell)
         .arg("-c")
         .arg(command_to_run)
         .envs(env::vars())
         .spawn()
-        .expect("Failed to execute command");
+    else {
+        return Err(Box::from("Failed to execute command"));
+    };
 
-    let pid = child.id().expect("Failed to get child pid");
+    let Some(pid) = child.id() else {
+        return Err(Box::from("Failed to get child pid"));
+    };
     let handle = child.wait_with_output();
 
     tokio::spawn(async move {
-        tokio::signal::ctrl_c().await.unwrap();
         logging::nl().await;
-        logging::info("👍 Shutting down gracefully...").await;
-        let result = Command::new("kill").arg(pid.to_string()).status().await;
+        match tokio::signal::ctrl_c().await {
+            Ok(()) => {
+                logging::info("👍 Shutting down gracefully...").await;
+            }
+            Err(e) => {
+                logging::error(&format!("🛑 Failed to listen for Ctrl+C: {e}")).await;
+            }
+        }
 
-        match result {
+        match Command::new("kill").arg(pid.to_string()).status().await {
             Ok(_) => {
                 logging::info("✅ All processes have been terminated.").await;
-                std::process::exit(0);
             }
             Err(e) => {
                 logging::error(&format!("🛑 Failed to kill process: {e}")).await;
-                std::process::exit(1);
             }
         }
     });
 
-    let output = handle.await;
-
-    match output {
+    match handle.await {
         Ok(output) => {
             if output.status.success() {
-                std::process::exit(0);
+                Ok(())
             } else {
-                std::process::exit(1);
+                Err(Box::from("Command failed"))
             }
         }
-        Err(e) => {
-            logging::error(&format!("🛑 Failed to wait for command execution: {e}")).await;
-            std::process::exit(1);
-        }
+        Err(e) => Err(Box::from(format!(
+            "🛑 Failed to wait for command execution: {e}"
+        ))),
     }
 }

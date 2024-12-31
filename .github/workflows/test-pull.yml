@@ -1,0 +1,33 @@
+name: Test - Pull Request
+
+on: [pull_request]
+
+jobs:
+  test:
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            targets: ["x86_64-unknown-linux-gnu"]
+          - os: macos-latest
+            targets: ["x86_64-apple-darwin"]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4.2.2
+
+      - name: Rust setup
+        uses: dtolnay/rust-toolchain@1ff72ee08e3cb84d84adba594e0a297990fc1ed3
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@f0deed1e0edfc6a9be95417288c0e1099b1eeec3
+        with:
+          shared-key: "test-${{ matrix.os }}"
+
+      - name: Run tests
+        run: cargo test

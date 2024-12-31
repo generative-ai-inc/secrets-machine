@@ -67,7 +67,17 @@ async fn handle_run_mode(matches: ArgMatches) {
 
     secrets_sources::check(&config, &secrets).await;
 
-    run(commands_config, config, secrets, command_name, command_args).await;
+    match run(commands_config, config, secrets, command_name, command_args).await {
+        Ok(()) => (),
+        Err(e) => {
+            // Only print the error log if there was an error on our side
+            let formatted_error = format!("{e}");
+            if formatted_error != "Command failed" {
+                logging::error(&format!("{e}")).await;
+            }
+            std::process::exit(1);
+        }
+    }
 }
 
 async fn handle_exec_mode(matches: ArgMatches) {
@@ -88,7 +98,17 @@ async fn handle_exec_mode(matches: ArgMatches) {
 
     secrets_sources::check(&config, &secrets).await;
 
-    execute(config, secrets, command_to_run.as_str()).await;
+    match execute(config, secrets, command_to_run.as_str()).await {
+        Ok(()) => (),
+        Err(e) => {
+            // Only print the error log if there was an error on our side
+            let formatted_error = format!("{e}");
+            if formatted_error != "Command failed" {
+                logging::error(&format!("{e}")).await;
+            }
+            std::process::exit(1);
+        }
+    }
 }
 
 #[tokio::main]

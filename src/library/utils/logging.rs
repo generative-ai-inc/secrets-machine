@@ -48,10 +48,15 @@ const LOG_DEBUG: &str = "\x1b[1;34mDEBUG   \x1b[0m";
 // Function to print messages in color
 pub async fn print_color(color: &str, message: &str) {
     // println!("{}{}{}", color, message, NC);
-    let parsed_message = format!("{}{}{}\n", color, message, NC);
+    let parsed_message = format!("{color}{message}{NC}\n");
     let mut stdout = stdout();
-    stdout.write_all(parsed_message.as_bytes()).await.unwrap();
-    stdout.flush().await.unwrap();
+    if let Err(e) = stdout.write_all(parsed_message.as_bytes()).await {
+        println!("Failed to write to stdout. Defaulting to println!(). Error: {e}");
+        println!("{parsed_message}");
+    }
+    if let Err(e) = stdout.flush().await {
+        println!("Failed to flush stdout. Error: {e}");
+    }
 }
 
 // Logging functions
@@ -74,6 +79,11 @@ pub async fn error(message: &str) {
 /// Print a newline
 pub async fn nl() {
     let mut stdout = stdout();
-    stdout.write_all("\n".as_bytes()).await.unwrap();
-    stdout.flush().await.unwrap();
+    if let Err(e) = stdout.write_all("\n".as_bytes()).await {
+        println!("Failed to write to stdout. Defaulting to println!(). Error: {e}");
+        println!("\n");
+    }
+    if let Err(e) = stdout.flush().await {
+        println!("Failed to flush stdout. Error: {e}");
+    }
 }

@@ -1,24 +1,19 @@
+use crate::library::system;
 use crate::library::utils::{env_vars, logging};
 use crate::models::config::BitwardenCredentials;
 use regex::Regex;
 use tokio::process::Command;
 
 pub async fn check_installation() {
-    let bws_version_result = Command::new("bws").arg("--version").output().await;
-
-    match bws_version_result {
-        Ok(output) => {
-            logging::info(&format!(
-                "Bitwarden Secrets Manager CLI version: {}",
-                String::from_utf8_lossy(&output.stdout).trim()
-            ))
-            .await;
-            return;
-        }
-        Err(_) => {
-            logging::error("Bitwarden Secrets Manager CLI not found via `bws` command. Go to https://github.com/bitwarden/sdk-sm/tree/main/crates/bws and follow the instructions to install it.").await;
-            std::process::exit(1);
-        }
+    if let Ok(output_string) = system::command::run("bws --version").await {
+        logging::info(&format!(
+            "Bitwarden Secrets Manager CLI version: {}",
+            output_string.trim()
+        ))
+        .await;
+    } else {
+        logging::error("Bitwarden Secrets Manager CLI not found via `bws` command. Go to https://github.com/bitwarden/sdk-sm/tree/main/crates/bws and follow the instructions to install it.").await;
+        std::process::exit(1);
     }
 }
 
@@ -33,7 +28,7 @@ pub async fn get_env_variables(
     let access_token = env_vars::get_from_all(secrets, env_var_name).await;
 
     let bitwarden_result = Command::new("bws")
-        .args(&[
+        .args([
             "secret",
             "list",
             "--output",
@@ -47,7 +42,13 @@ pub async fn get_env_variables(
     match bitwarden_result {
         Ok(bitwarden_output) => {
             if bitwarden_output.status.success() {
-                let re = Regex::new(r#"^([A-Z0-9_]+)="(.+)""#).unwrap();
+                let Ok(re) = Regex::new(r#"^([A-Z0-9_]+)="(.+)""#) else {
+                    logging::error(
+                        "Failed to create regex while retrieving bitwarden environment variables",
+                    )
+                    .await;
+                    return vec![];
+                };
 
                 let env_vars_str = String::from_utf8_lossy(&bitwarden_output.stdout);
                 let mut env_vars: Vec<(String, String)> = Vec::new();
@@ -73,8 +74,7 @@ pub async fn get_env_variables(
         }
         Err(e) => {
             logging::error(&format!(
-                "🛑 Failed to retrieve bitwarden environment variables: {}",
-                e
+                "🛑 Failed to retrieve bitwarden environment variables: {e}"
             ))
             .await;
             std::process::exit(1);

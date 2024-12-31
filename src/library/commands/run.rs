@@ -10,6 +10,12 @@ use crate::{
 
 use super::prepare;
 
+/// Runs a command specified in the config file with the secrets machine
+///
+/// # Panics
+/// - If the command fails to execute
+/// - If the function fails to get the output of the command
+/// - If the function fails to kill the process
 pub async fn run(
     commands_config: CommandsConfig,
     config: Config,
@@ -19,12 +25,11 @@ pub async fn run(
 ) {
     prepare(&config, &secrets).await;
 
-    let pre_command_result = commands_config.pre_commands.get(&command_name);
-    if let Some(pre_command) = pre_command_result {
+    if let Some(pre_command) = commands_config.pre_commands.get(&command_name) {
         let result = command::run(pre_command).await;
         match result {
             Ok(output) => {
-                logging::info(&format!("Output: {}", output)).await;
+                logging::info(&format!("Output: {output}")).await;
                 logging::info("✅ Pre command completed successfully").await;
             }
             Err(e) => {
@@ -36,12 +41,12 @@ pub async fn run(
     }
 
     let command = commands_config.commands.get(&command_name).unwrap();
-    let command = format!("{} {}", command, command_args);
+    let command = format!("{command} {command_args}");
     logging::nl().await;
     logging::print_color(logging::BG_GREEN, " Running command ").await;
     logging::info(&format!(
         "Running: {}",
-        env_vars::replace_env_vars(&command, true).await
+        env_vars::replace(&command, true).await
     ))
     .await;
     let child = Command::new("sh")
@@ -57,7 +62,7 @@ pub async fn run(
         tokio::signal::ctrl_c().await.unwrap();
         logging::nl().await;
         logging::info("👍 Shutting down gracefully...").await;
-        let result = Command::new("kill").arg(&pid.to_string()).status().await;
+        let result = Command::new("kill").arg(pid.to_string()).status().await;
 
         match result {
             Ok(_) => {
@@ -65,7 +70,7 @@ pub async fn run(
                 std::process::exit(0);
             }
             Err(e) => {
-                logging::error(&format!("🛑 Failed to kill process: {}", e)).await;
+                logging::error(&format!("🛑 Failed to kill process: {e}")).await;
                 std::process::exit(1);
             }
         }
@@ -82,7 +87,7 @@ pub async fn run(
             }
         }
         Err(e) => {
-            logging::error(&format!("🛑 Failed to wait for main command: {}", e)).await;
+            logging::error(&format!("🛑 Failed to wait for main command: {e}")).await;
         }
     }
 }

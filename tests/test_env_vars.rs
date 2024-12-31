@@ -9,7 +9,7 @@ async fn test_replace_env_vars() {
 
     let test_string = "Hi there $TEST_ENV_VAR $TEST_ENV_VAR_2";
 
-    let test_string_with_values = env_vars::replace_env_vars(&test_string, false).await;
+    let test_string_with_values = env_vars::replace(test_string, false).await;
 
     assert_eq!(test_string_with_values, "Hi there beautiful world");
 }
@@ -21,7 +21,7 @@ async fn test_replace_env_vars_brackets() {
 
     let test_string = "Hi there ${TEST_ENV_VAR} ${TEST_ENV_VAR_2}";
 
-    let test_string_with_values = env_vars::replace_env_vars(&test_string, false).await;
+    let test_string_with_values = env_vars::replace(test_string, false).await;
 
     assert_eq!(test_string_with_values, "Hi there beautiful world");
 }

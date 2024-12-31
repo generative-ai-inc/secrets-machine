@@ -1,8 +1,8 @@
-use std::{os::unix::fs::PermissionsExt, path::PathBuf};
+use std::{error::Error, os::unix::fs::PermissionsExt, path::PathBuf};
 
+use crate::{built_info, library::system};
+use bytes::Bytes;
 use tokio::process::Command;
-
-use crate::built_info;
 
 use super::logging;
 
@@ -25,7 +25,7 @@ async fn schedule_replace_and_restart(
     );
 
     let rand_num = fastrand::i32(..);
-    let script_path = PathBuf::from(format!("/tmp/sm-{}.sh", rand_num));
+    let script_path = PathBuf::from(format!("/tmp/sm-{rand_num}.sh"));
     fs::write(&script_path, script)
         .await
         .expect("Failed to write update script");
@@ -43,46 +43,66 @@ async fn schedule_replace_and_restart(
     std::process::exit(0);
 }
 
+async fn download_update(
+    client: &reqwest::Client,
+    download_url: &str,
+) -> Result<Bytes, Box<dyn Error>> {
+    let Ok(response) = client
+        .get(download_url)
+        .header("Accept", "application/octet-stream")
+        .header("User-Agent", "sm")
+        .send()
+        .await
+    else {
+        return Err(Box::new(std::io::Error::new(
+            std::io::ErrorKind::Other,
+            "Failed to download update",
+        )));
+    };
+
+    if !response.status().is_success() {
+        return Err(Box::new(std::io::Error::new(
+            std::io::ErrorKind::Other,
+            format!("Failed to download update: {}", response.status()),
+        )));
+    }
+
+    match response.bytes().await {
+        Ok(bytes) => Ok(bytes),
+        Err(e) => Err(Box::new(std::io::Error::new(
+            std::io::ErrorKind::Other,
+            format!("Failed to get bytes: {e}"),
+        ))),
+    }
+}
+
 pub async fn update() {
     logging::info("Updating Secrets Machine...").await;
 
     let current_version: String = built_info::PKG_VERSION.to_string();
 
-    logging::info(&format!("Current version: {}", current_version)).await;
+    logging::info(&format!("Current version: {current_version}")).await;
 
     // Find where the binary is located
-    let binary_path = std::env::current_exe().unwrap();
-
-    let os;
-    let arch;
+    let Ok(binary_path) = std::env::current_exe() else {
+        logging::error("Failed to find secrets machine binary path").await;
+        std::process::exit(1);
+    };
 
     // Find os and arch
-    let os_results = Command::new("uname").args(&["-s"]).output().await;
-    match os_results {
-        Ok(os_output) => {
-            os = String::from_utf8(os_output.stdout).unwrap();
-        }
-        Err(e) => {
-            logging::error(&format!("Failed to find os: {}", e)).await;
-            return;
-        }
-    }
-
-    let arch_results = Command::new("uname").args(&["-m"]).output().await;
-    match arch_results {
-        Ok(arch_output) => {
-            arch = String::from_utf8(arch_output.stdout).unwrap();
-        }
-        Err(e) => {
-            logging::error(&format!("Failed to find arch: {}", e)).await;
-            return;
-        }
-    }
+    let Ok(os_string) = system::command::run("uname -s").await else {
+        logging::error("Failed to read output of command which identifies os").await;
+        std::process::exit(1);
+    };
+    let Ok(arch_string) = system::command::run("uname -m").await else {
+        logging::error("Failed to read output of command which identifies arch").await;
+        std::process::exit(1);
+    };
 
     let asset_name = format!(
         "secrets-machine-{}-{}",
-        arch.to_lowercase().trim(),
-        os.to_lowercase().trim()
+        arch_string.to_lowercase().trim(),
+        os_string.to_lowercase().trim()
     );
 
     let client = reqwest::Client::new();
@@ -98,7 +118,7 @@ pub async fn update() {
     let response = match response {
         Ok(res) => res,
         Err(e) => {
-            logging::error(&format!("Failed to get latest version: {}", e)).await;
+            logging::error(&format!("Failed to get latest version: {e}")).await;
             std::process::exit(1);
         }
     };
@@ -112,54 +132,60 @@ pub async fn update() {
         std::process::exit(1);
     }
 
-    let data = response.json::<serde_json::Value>().await.unwrap();
+    let Ok(data) = response.json::<serde_json::Value>().await else {
+        logging::error("Failed to deserialize latest release response").await;
+        std::process::exit(1);
+    };
 
-    let latest_version = data["tag_name"].as_str().unwrap();
-    let latest_version = latest_version.replace("v", "");
+    let latest_version = if let Some(tag) = data["tag_name"].as_str() {
+        tag.replace('v', "")
+    } else {
+        logging::error("Tag name not found in latest release response").await;
+        std::process::exit(1);
+    };
 
-    logging::info(&format!("Latest version: {}", latest_version)).await;
+    logging::info(&format!("Latest version: {latest_version}")).await;
 
     if current_version == latest_version {
         logging::info("You are already on the latest version").await;
         std::process::exit(0);
     }
 
-    let assets = data["assets"].as_array().unwrap();
+    let Some(assets) = data["assets"].as_array() else {
+        logging::error("Assets not found in latest release response").await;
+        std::process::exit(1);
+    };
 
-    let asset = assets
-        .iter()
-        .find(|a| a["name"].as_str().unwrap().contains(&asset_name));
+    let Some(asset) = assets.iter().find(|a| {
+        let Some(name) = a["name"].as_str() else {
+            return false;
+        };
+        name.contains(&asset_name)
+    }) else {
+        logging::error(&format!("No asset found for {asset_name}")).await;
+        std::process::exit(1);
+    };
 
-    let download_url;
-    match asset {
-        Some(a) => {
-            download_url = a["url"].as_str().unwrap();
-        }
-        None => {
-            logging::error(&format!("No asset found for {}", asset_name)).await;
-            std::process::exit(1);
-        }
-    }
+    let Some(download_url) = asset["url"].as_str() else {
+        logging::error("Download URL not found in asset").await;
+        std::process::exit(1);
+    };
 
-    let response = client
-        .get(download_url)
-        .header("Accept", "application/octet-stream")
-        .header("User-Agent", "sm")
-        .send()
-        .await
-        .unwrap();
-
-    let bytes = response.bytes().await.expect("Failed to get bytes");
+    let Ok(bytes) = download_update(&client, download_url).await else {
+        logging::error("Failed to download update").await;
+        std::process::exit(1);
+    };
 
     let rand_num = fastrand::i32(..);
-    let tmp_binary_path = PathBuf::from(format!("/tmp/sm-{}", rand_num));
-    fs::write(&tmp_binary_path, bytes)
-        .await
-        .expect("Failed to write bytes");
+    let tmp_binary_path = PathBuf::from(format!("/tmp/sm-{rand_num}"));
+
+    if let Err(e) = fs::write(&tmp_binary_path, bytes).await {
+        logging::error(&format!("Failed to write bytes: {e}")).await;
+        std::process::exit(1);
+    };
 
     logging::info(&format!(
-        "Updated Secrets Machine to version {}",
-        latest_version
+        "Updated Secrets Machine to version {latest_version}"
     ))
     .await;
 

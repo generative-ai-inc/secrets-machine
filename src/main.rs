@@ -37,13 +37,13 @@ async fn handle_run_mode(matches: ArgMatches) {
     // Run options
     let commands_config_path = COMMANDS_CONFIG_PATH.clone();
 
-    let mut command_args = "".to_string();
+    let mut command_args = String::new();
 
-    let mut command_name: String = "".to_string();
+    let mut command_name: String = String::new();
     if let Some(run_matches) = matches.subcommand_matches("run") {
         if let Some(passed_command_name) = run_matches.get_one::<String>("command") {
-            command_name = passed_command_name.to_owned();
-            logging::info(&format!("Command: {}", passed_command_name)).await;
+            passed_command_name.clone_into(&mut command_name);
+            logging::info(&format!("Command: {passed_command_name}")).await;
         } else {
             logging::error("Unable to get command").await;
             std::process::exit(1);
@@ -51,7 +51,7 @@ async fn handle_run_mode(matches: ArgMatches) {
 
         if let Some(passed_command_args) = run_matches.get_many::<String>("command_args") {
             for arg in passed_command_args {
-                command_args = command_args + &arg + " ";
+                command_args = command_args + arg + " ";
             }
         }
     }
@@ -71,11 +71,11 @@ async fn handle_run_mode(matches: ArgMatches) {
 }
 
 async fn handle_exec_mode(matches: ArgMatches) {
-    let mut command_to_run: String = "".to_string();
+    let mut command_to_run: String = String::new();
 
     if let Some(exec_matches) = matches.subcommand_matches("exec") {
         if let Some(passed_command_to_run) = exec_matches.get_one::<String>("command") {
-            command_to_run = passed_command_to_run.to_owned();
+            passed_command_to_run.clone_into(&mut command_to_run);
         } else {
             logging::error("Unable to get command").await;
             std::process::exit(1);
@@ -147,7 +147,7 @@ async fn main() {
             } else if secrets_matches.subcommand_matches("list").is_some() {
                 let credentials = keyring::get_secrets().await;
                 for (key, _) in credentials.as_object().unwrap() {
-                    println!("{}", key);
+                    println!("{key}");
                 }
             }
         }

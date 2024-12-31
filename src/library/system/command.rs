@@ -1,14 +1,15 @@
 use std::{env, error::Error};
 
-use tokio::{process::Command, sync::watch};
+use tokio::process::Command;
 
-use crate::library::utils::logging;
-
+/// Runs a command and returns the output
+///
+/// # Errors
+/// - If the command fails to execute
+/// - If the function fails to get the output of the command
 pub async fn run(command_str: &str) -> Result<String, Box<dyn Error>> {
     // Get the default shell from the SHELL environment variable
     let default_shell = env::var("SHELL").unwrap_or_else(|_| "/bin/sh".to_string());
-
-    logging::info(&format!("Path: {}", env::var("PATH").unwrap())).await;
 
     let run_results = Command::new(default_shell)
         .arg("-c")
@@ -21,74 +22,9 @@ pub async fn run(command_str: &str) -> Result<String, Box<dyn Error>> {
         Ok(output) => {
             if output.status.success() {
                 return Ok(String::from_utf8_lossy(&output.stdout).to_string());
-            } else {
-                return Err(Box::from(String::from_utf8_lossy(&output.stderr)));
             }
+            Err(Box::from(String::from_utf8_lossy(&output.stderr)))
         }
-        Err(e) => {
-            return Err(Box::from(format!("🛑 Failed to check result: {}", e)));
-        }
-    }
-}
-
-pub async fn spawn(command_str: &str) -> Result<(), Box<dyn Error>> {
-    let (tx, mut rx) = watch::channel(false);
-
-    // Get the default shell from the SHELL environment variable
-    let default_shell = env::var("SHELL").unwrap_or_else(|_| "/bin/sh".to_string());
-
-    logging::info(&format!("Path: {}", env::var("PATH").unwrap())).await;
-
-    let child = Command::new(default_shell)
-        .arg("-c")
-        .arg(&command_str)
-        .envs(env::vars())
-        .spawn()
-        .expect("Failed to run command");
-
-    let pid: u32 = child.id().expect("Failed to get command pid");
-    let handle = child.wait_with_output();
-
-    let install_handle = tokio::spawn(async move {
-        loop {
-            tokio::select! {
-                _ = tokio::signal::ctrl_c() => {
-                    logging::nl().await;
-                    logging::info("🟨 Cancelling command...").await;
-                    let result = Command::new("kill").arg(&pid.to_string()).status().await;
-
-                    match result {
-                        Ok(_) => {
-                            logging::info("✅ Command has been terminated.").await;
-                            std::process::exit(0);
-                        }
-                        Err(e) => {
-                            logging::error(&format!("🛑 Failed to kill process: {}", e)).await;
-                            std::process::exit(1);
-                        }
-                    }
-                }
-                _ = rx.changed() => {
-                    if *rx.borrow() {
-                        break; // Command completed, exit the task
-                    }
-                }
-            }
-        }
-    });
-
-    let output = handle.await;
-
-    match output {
-        Ok(output) => {
-            if output.status.success() {
-                tx.send(true).unwrap();
-                install_handle.await.unwrap();
-                return Ok(());
-            } else {
-                return Err(Box::from("🛑 Command failed"));
-            }
-        }
-        Err(e) => return Err(Box::from(format!("🛑 Failed to get command status: {}", e))),
+        Err(e) => Err(Box::from(format!("🛑 Failed to check result: {e}"))),
     }
 }

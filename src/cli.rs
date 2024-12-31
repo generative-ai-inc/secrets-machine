@@ -15,7 +15,7 @@ pub fn build() -> Command {
     .subcommand(Command::new("run")
         .about("Run a command defined in the secrets_machine.toml configuration file")
         .arg(
-            arg!(<command_name> "Name of the command to run, as defined in the configuration file")
+            arg!([command_name] "Name of the command to run, as defined in the configuration file")
             .required(true)
             .value_parser(value_parser!(String))
         )

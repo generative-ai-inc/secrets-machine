@@ -29,7 +29,7 @@ pub async fn print_variables_box<S: ::std::hash::BuildHasher>(
     let source_margin = "─".to_string().repeat(longest_source_len);
 
     // Using longer | character for sides: │
-    logging::print_color(logging::NC, &format!("┌─{key_margin}─┬─{source_margin}─┐")).await;
+    logging::print_color(logging::NC, &format!("╭─{key_margin}─┬─{source_margin}─╮")).await;
     logging::print_color(
         logging::NC,
         &format!(
@@ -71,7 +71,7 @@ pub async fn print_variables_box<S: ::std::hash::BuildHasher>(
         logging::print_color(logging::NC, &format!("│ {parsed_key} │ {parsed_source} │")).await;
     }
 
-    logging::print_color(logging::NC, &format!("└─{key_margin}─┴─{source_margin}─┘")).await;
+    logging::print_color(logging::NC, &format!("╰─{key_margin}─┴─{source_margin}─╯")).await;
 }
 
 pub fn set(env_vars: &Vec<(String, String, String)>) {

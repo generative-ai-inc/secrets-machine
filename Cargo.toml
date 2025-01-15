@@ -33,7 +33,7 @@
   ], default-features = false }
   rpassword = "7.3.1"
   serde = "1.0.217"
-  serde_json = { version = "1.0.133", features = ["std"] }
+  serde_json = { version = "1.0.135", features = ["std"] }
   tokio = { version = "1.43.0", features = [
     "macros",
     "signal",

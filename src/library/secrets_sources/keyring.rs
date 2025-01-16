@@ -62,3 +62,25 @@ pub async fn set_secret(secrets: serde_json::Value) {
         logging::error("Could not save secrets in keyring").await;
     }
 }
+
+pub async fn get_env_variables(
+    keyring_secrets: &serde_json::Value,
+) -> Vec<(String, String, String)> {
+    let mut env_vars: Vec<(String, String, String)> = Vec::new();
+
+    let Some(secrets_map) = keyring_secrets.as_object() else {
+        logging::error("Secrets map not found").await;
+        std::process::exit(1);
+    };
+
+    // Add keyring secrets to the environment variables
+    for (key, value) in secrets_map {
+        if let Some(value) = value.as_str() {
+            env_vars.push((key.to_string(), value.to_string(), "keyring".to_string()));
+        } else {
+            logging::error(&format!("Failed to set secret {key} from keyring")).await;
+        }
+    }
+
+    env_vars
+}

@@ -21,7 +21,7 @@ pub fn build() -> Command {
         )
         .arg(
             arg!(
-                -c --config <file> "Override configuration file to use."
+                -c --config <file> "Override the project configuration file to use."
             )
             .default_value(*COMMANDS_CONFIG_PATH_STR)
             .required(false)
@@ -42,6 +42,15 @@ pub fn build() -> Command {
     )
     .subcommand(Command::new("exec")
         .about("Execute an arbitrary command using the Secrets Machine environment")
+        .arg(
+            arg!(
+                -c --config <file> "Override the project configuration file to use."
+            )
+            .default_value(*COMMANDS_CONFIG_PATH_STR)
+            .required(false)
+            .value_parser(value_parser!(PathBuf))
+            .value_hint(ValueHint::AnyPath),
+        )
         .arg(
             arg!(<command> "Command to execute")
             .required(true)

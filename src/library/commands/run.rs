@@ -7,7 +7,7 @@ use crate::{
         system::command,
         utils::{env_vars, logging},
     },
-    models::{commands_config::CommandsConfig, config::Config},
+    models::{config::Config, project_config::ProjectConfig},
 };
 
 use super::prepare;
@@ -20,15 +20,15 @@ use super::prepare;
 /// - If the function fails to get the output of the command
 /// - If the function fails to kill the process
 pub async fn run(
-    commands_config: CommandsConfig,
+    project_config: ProjectConfig,
     config: Config,
     secrets: serde_json::Value,
     command_name: String,
     command_args: String,
 ) -> Result<(), Box<dyn Error>> {
-    prepare(&config, &secrets).await?;
+    prepare(&project_config, &config, &secrets).await;
 
-    if let Some(pre_command) = commands_config.pre_commands.get(&command_name) {
+    if let Some(pre_command) = project_config.pre_commands.get(&command_name) {
         let result = command::run(pre_command).await;
         match result {
             Ok(output) => {
@@ -43,7 +43,7 @@ pub async fn run(
         }
     }
 
-    let Some(command) = commands_config.commands.get(&command_name) else {
+    let Some(command) = project_config.commands.get(&command_name) else {
         return Err(Box::from("Command not found"));
     };
 

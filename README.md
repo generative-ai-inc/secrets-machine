@@ -42,9 +42,9 @@ Supported platforms (Contributions welcome!):
 bash <(curl -sS "https://raw.githubusercontent.com/generative-ai-inc/secrets-machine/main/install.sh")
 ```
 
-### Execute a command with secrets
+### Usage
 
-Executing a command with `sm exec` gives the command access to the configured secrets. Use it to run commands as you would normally do.
+To execute a command with secrets simply run `sm exec` and pass the command you want to run. For example:
 
 ```sh
 sm exec 'cargo run'
@@ -68,17 +68,13 @@ sm exec "echo \${MY_SECRET}"
 # OUTPUT: My secret is my-secret-value
 ```
 
-### Run a pre-configured command
+### Project Configuration
 
 Create a `secrets_machine.toml` configuration file. See [secrets_machine.toml](https://github.com/generative-ai-inc/secrets-machine/blob/main/secrets_machine.toml) for an example.
 
-Then run:
+#### Commands
 
-```sh
-sm run <command-name>
-```
-
-For example, given the following configuration:
+In the `secrets_machine.toml` file, you can define commands that will be run in the secrets machine environment.
 
 ```toml
 [commands]
@@ -86,21 +82,34 @@ For example, given the following configuration:
   test = "cargo test"
 ```
 
-You can run:
+You can then run the commands with `sm run <command-name>`, for example:
 
 ```sh
 sm run dev
 sm run test
 ```
 
-### Configuration
+#### Aliases
 
-The configuration file is located at `~/.config/secrets-machine/config.toml`.
-For now, only Bitwarden is supported as a secrets source.
+Aliases are useful for creating new environment variables from existing ones.
 
-#### Secrets Sources
+```toml
+[aliases]
+  NEXT_PUBLIC_API_KEY = "PUBLIC_API_KEY"
+  VITE_ANON_KEY = "ANON_KEY"
+```
 
-##### Keyring
+This will set the value of `NEXT_PUBLIC_API_KEY` to the value of `PUBLIC_API_KEY`.
+Similarly, `VITE_ANON_KEY` will be set to the value of `ANON_KEY`.
+
+### User Configuration
+
+The user configuration file is located at `~/.config/secrets-machine/config.toml`. This is where you define the secrets source to use.
+For now, only the system keyring and Bitwarden are supported.
+
+### Secrets Sources
+
+#### Keyring
 
 You can always add secrets to the keyring with the `sm secret add` command. For example:
 
@@ -109,7 +118,7 @@ sm secret add GITHUB_USERNAME <github-username>
 sm secret add GITHUB_TOKEN
 ```
 
-##### Bitwarden Secret Manager
+#### Bitwarden Secret Manager
 
 To use the bitwarden secret manager, you need to have the BWS_ACCESS_TOKEN variable set. We recommend using the keyring to store this token. You can do this with the following command:
 

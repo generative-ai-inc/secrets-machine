@@ -20,7 +20,7 @@ pub async fn check_installation() {
 pub async fn get_env_variables(
     credentials: Option<&BitwardenCredentials>,
     secrets: &serde_json::Value,
-) -> Vec<(String, String)> {
+) -> Vec<(String, String, String)> {
     let env_var_name = match credentials {
         Some(credentials) => credentials.access_token_name.as_str(),
         None => "BWS_ACCESS_TOKEN",
@@ -51,14 +51,18 @@ pub async fn get_env_variables(
                 };
 
                 let env_vars_str = String::from_utf8_lossy(&bitwarden_output.stdout);
-                let mut env_vars: Vec<(String, String)> = Vec::new();
+                let mut env_vars: Vec<(String, String, String)> = Vec::new();
 
                 for line in env_vars_str.lines() {
                     if let Some(caps) = re.captures(line) {
                         let key = &caps[1];
                         let value = &caps[2];
 
-                        env_vars.push((key.to_string(), value.to_string()));
+                        env_vars.push((
+                            key.to_string(),
+                            value.to_string(),
+                            "bitwarden".to_string(),
+                        ));
                     }
                 }
 

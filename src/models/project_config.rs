@@ -10,11 +10,18 @@ fn default_pre_commands() -> HashMap<String, String> {
     HashMap::new()
 }
 
+fn default_aliases() -> HashMap<String, String> {
+    HashMap::new()
+}
+
 #[derive(Deserialize, Serialize, Debug)]
-pub struct CommandsConfig {
+pub struct ProjectConfig {
     #[serde(default = "default_commands")]
     pub commands: HashMap<String, String>,
 
     #[serde(default = "default_pre_commands")]
     pub pre_commands: HashMap<String, String>,
+
+    #[serde(default = "default_aliases")]
+    pub aliases: HashMap<String, String>,
 }

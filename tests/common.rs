@@ -2,7 +2,7 @@ use std::{env, error::Error, path::PathBuf};
 
 use sm::{
     library::system::{commands_config, config},
-    models::{commands_config::CommandsConfig, config::Config},
+    models::{config::Config, project_config::ProjectConfig},
 };
 use tokio::fs;
 
@@ -10,7 +10,7 @@ use tokio::fs;
 ///
 /// # Errors
 #[allow(dead_code)]
-pub async fn setup() -> Result<(CommandsConfig, Config, serde_json::Value), Box<dyn Error>> {
+pub async fn setup() -> Result<(ProjectConfig, Config, serde_json::Value), Box<dyn Error>> {
     env::set_var("TEST_ENV_VAR", "beautiful");
     // Make test_results directory
     if let Err(e) = fs::create_dir_all("tests/test_results").await {

@@ -4,7 +4,7 @@ use lazy_static::lazy_static;
 use serde_json::{json, Value};
 use sm::library::commands::{execute, run};
 use sm::library::config::commands;
-use sm::library::secrets::{generic, keyring};
+use sm::library::secrets::generic;
 use sm::library::secrets_sources;
 use sm::library::system::{commands_config, config};
 use sm::library::utils::{env_vars, logging, updater};
@@ -35,7 +35,7 @@ fn print_completions<G: Generator>(gen: G, cmd: &mut Command) {
 
 async fn handle_run_mode(matches: ArgMatches) {
     // Run options
-    let commands_config_path = COMMANDS_CONFIG_PATH.clone();
+    let project_config_path = COMMANDS_CONFIG_PATH.clone();
 
     let mut command_args = String::new();
 
@@ -56,18 +56,18 @@ async fn handle_run_mode(matches: ArgMatches) {
         }
     }
 
-    let commands_config = commands_config::parse(commands_config_path).await;
+    let project_config = commands_config::parse(project_config_path).await;
 
     let config = config::parse(None).await;
 
     // Check that the command is in the config
-    commands::check(&commands_config, &command_name).await;
+    commands::check(&project_config, &command_name).await;
 
-    let secrets = keyring::get_secrets().await;
+    let secrets = secrets_sources::keyring::get_secrets().await;
 
     secrets_sources::check(&config, &secrets).await;
 
-    match run(commands_config, config, secrets, command_name, command_args).await {
+    match run(project_config, config, secrets, command_name, command_args).await {
         Ok(()) => (),
         Err(e) => {
             // Only print the error log if there was an error on our side
@@ -81,6 +81,9 @@ async fn handle_run_mode(matches: ArgMatches) {
 }
 
 async fn handle_exec_mode(matches: ArgMatches) {
+    // Run options
+    let project_config_path = COMMANDS_CONFIG_PATH.clone();
+
     let mut command_to_run: String = String::new();
 
     if let Some(exec_matches) = matches.subcommand_matches("exec") {
@@ -92,13 +95,15 @@ async fn handle_exec_mode(matches: ArgMatches) {
         }
     }
 
+    let project_config = commands_config::parse(project_config_path).await;
+
     let config = config::parse(None).await;
 
-    let secrets = keyring::get_secrets().await;
+    let secrets = secrets_sources::keyring::get_secrets().await;
 
     secrets_sources::check(&config, &secrets).await;
 
-    match execute(config, secrets, command_to_run.as_str()).await {
+    match execute(project_config, config, secrets, command_to_run.as_str()).await {
         Ok(()) => (),
         Err(e) => {
             // Only print the error log if there was an error on our side
@@ -141,7 +146,7 @@ async fn main() {
                     let upper_name = name.to_uppercase();
                     env_vars::verify_name(upper_name.clone()).await;
 
-                    let mut secrets = keyring::get_secrets().await;
+                    let mut secrets = secrets_sources::keyring::get_secrets().await;
                     let secret;
                     if let Some(value) = add_matches.get_one::<String>("value") {
                         secret = value.to_owned();
@@ -149,23 +154,23 @@ async fn main() {
                         secret = generic::ask_for_secret(&upper_name).await;
                     }
                     secrets[upper_name] = json!(secret);
-                    keyring::set_secret(secrets).await;
+                    secrets_sources::keyring::set_secret(secrets).await;
                 }
             } else if let Some(remove_matches) = secrets_matches.subcommand_matches("remove") {
                 if remove_matches.get_flag("all") {
                     let secrets = json!({});
-                    keyring::set_secret(secrets).await;
+                    secrets_sources::keyring::set_secret(secrets).await;
                 } else if let Some(name) = remove_matches.get_one::<String>("name") {
                     let upper_name = name.to_uppercase();
                     env_vars::verify_name(upper_name.clone()).await;
-                    let mut secrets = keyring::get_secrets().await;
+                    let mut secrets = secrets_sources::keyring::get_secrets().await;
                     if let Value::Object(ref mut map) = secrets {
                         map.remove(&upper_name);
                     }
-                    keyring::set_secret(secrets).await;
+                    secrets_sources::keyring::set_secret(secrets).await;
                 }
             } else if secrets_matches.subcommand_matches("list").is_some() {
-                let credentials = keyring::get_secrets().await;
+                let credentials = secrets_sources::keyring::get_secrets().await;
                 for (key, _) in credentials.as_object().unwrap() {
                     println!("{key}");
                 }

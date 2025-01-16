@@ -2,7 +2,7 @@ use std::{collections::HashMap, env};
 
 use regex::Regex;
 
-use crate::library::{secrets, utils::logging};
+use crate::library::{secrets_sources, utils::logging};
 
 pub async fn print_variables_box<S: ::std::hash::BuildHasher>(
     original_env_vars: HashMap<String, String, S>,
@@ -108,7 +108,7 @@ pub async fn make_sure_exists(secrets: Option<&serde_json::Value>, name: &str) {
         let secrets_value = if let Some(secrets) = secrets {
             secrets
         } else {
-            &secrets::keyring::get_secrets().await
+            &secrets_sources::keyring::get_secrets().await
         };
 
         if secrets_value.get(name).is_none() {

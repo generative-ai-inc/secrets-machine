@@ -4,7 +4,7 @@ use tokio::process::Command;
 
 use crate::{
     library::utils::{env_vars, logging},
-    models::config::Config,
+    models::{config::Config, project_config::ProjectConfig},
 };
 
 use super::prepare;
@@ -20,11 +20,12 @@ use super::prepare;
 /// - When `return_output` is false:
 ///   - Never
 pub async fn execute(
+    project_config: ProjectConfig,
     config: Config,
     secrets: serde_json::Value,
     command_to_run: &str,
 ) -> Result<(), Box<dyn Error>> {
-    prepare(&config, &secrets).await?;
+    prepare(&project_config, &config, &secrets).await;
 
     logging::nl().await;
     logging::print_color(logging::BG_GREEN, " Executing command ").await;

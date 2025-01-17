@@ -60,10 +60,20 @@ pub async fn get_env_variables(
                 };
 
                 let env_vars_str = String::from_utf8_lossy(&bitwarden_output.stdout);
+
                 let mut env_vars: HashMap<String, (String, String)> = HashMap::new();
 
-                for line in env_vars_str.lines() {
-                    if let Some(caps) = re.captures(line) {
+                let Ok(ansi_escape) = Regex::new(r"\x1B\[[0-?]*[ -/]*[@-~]") else {
+                    logging::error(
+                        "Failed to create regex while retrieving bitwarden environment variables",
+                    )
+                    .await;
+                    return HashMap::new();
+                };
+
+                for line in env_vars_str.lines().filter(|line| !line.is_empty()) {
+                    let clean_line = ansi_escape.replace_all(line, "");
+                    if let Some(caps) = re.captures(&clean_line) {
                         let key = &caps[1];
                         let value = &caps[2];
 

@@ -1,6 +1,6 @@
 use crate::library::system;
 use crate::library::utils::{env_vars, logging};
-use crate::models::config::BitwardenCredentials;
+use crate::models::secret_source::BitwardenCredentials;
 use regex::Regex;
 use tokio::process::Command;
 

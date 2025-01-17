@@ -3,16 +3,9 @@ use sm::library::commands::run;
 mod common;
 
 async fn run_test(test_name: &str) {
-    let (commands_config, config, secrets) = common::setup().await.unwrap();
+    let (config, secrets) = common::setup().await.unwrap();
 
-    let _ = run(
-        commands_config,
-        config,
-        secrets,
-        test_name.to_string(),
-        String::new(),
-    )
-    .await;
+    let _ = run(&config, &secrets, test_name, "").await;
 }
 
 #[tokio::test]

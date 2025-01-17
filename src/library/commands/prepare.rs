@@ -1,9 +1,6 @@
-use crate::{
-    library::secrets_sources,
-    models::{config::Config, project_config::ProjectConfig},
-};
+use crate::{library::secrets_sources, models::full_config::FullConfig};
 
 /// Sync secrets and set environment variables
-pub async fn prepare(project_config: &ProjectConfig, config: &Config, secrets: &serde_json::Value) {
-    secrets_sources::sync(project_config, config, secrets).await;
+pub async fn prepare(config: &FullConfig, secrets: &serde_json::Value) {
+    secrets_sources::sync(config, secrets).await;
 }

@@ -1,6 +1,6 @@
 # Secrets Machine
 
-Secrets Machine is a tool for injecting secrets into your environment at runtime. It is useful for CI/CD pipelines, local development, and other scenarios where you need to inject secrets into your environment.
+Secrets Machine is a tool for injecting secrets into your environment at runtime. It is useful for CI/CD pipelines, local development, and other scenarios where you need to inject secrets into your environment in a secure, standardized way.
 
 ## 😕 Without Secrets Machine
 
@@ -26,10 +26,11 @@ Type "help", "copyright", "credits" or "license" for more information.
 
 Secrets are read from the following sources, in this order:
 
-1. ~~A dotenv file (.env)~~ (TODO)
-2. Environment variables
-3. Secret Sources (e.g. Bitwarden)
-4. Keyring
+1. [Aliases](#aliases)
+2. A dotenv file (.env)
+3. Process environment variables
+4. [Secret Managers](#secrets-managers)
+5. [Keyring](#keyring)
 
 Supported platforms (Contributions welcome!):
 
@@ -68,9 +69,21 @@ sm exec "echo \${MY_SECRET}"
 # OUTPUT: My secret is my-secret-value
 ```
 
-### Project Configuration
+### Configuration File
 
-Create a `secrets_machine.toml` configuration file. See [secrets_machine.toml](https://github.com/generative-ai-inc/secrets-machine/blob/main/secrets_machine.toml) for an example.
+You can customize the behavior of secrets machine by editing the configuration file. The configuration file can be located in the user's home directory or in the project root.
+
+#### Location
+
+##### User Configuration
+
+The user configuration file is located at `~/.config/secrets-machine/config.toml`.
+
+##### Project Configuration
+
+The project configuration file is usually a file named `secrets_machine.toml` at the root of your project. You can specify a different file with the `--config` option. Any configuration in this file will override the user configuration.
+
+See [secrets_machine.toml](https://github.com/generative-ai-inc/secrets-machine/blob/main/secrets_machine.toml) for an example.
 
 #### Commands
 
@@ -89,6 +102,16 @@ sm run dev
 sm run test
 ```
 
+#### Pre Commands
+
+Pre commands are useful for setting up the environment before running the command.
+
+```toml
+[pre_commands]
+  dev  = "unset ARGV0"
+  test = "unset ARGV0"
+```
+
 #### Aliases
 
 Aliases are useful for creating new environment variables from existing ones.
@@ -102,28 +125,35 @@ Aliases are useful for creating new environment variables from existing ones.
 This will set the value of `NEXT_PUBLIC_API_KEY` to the value of `PUBLIC_API_KEY`.
 Similarly, `VITE_ANON_KEY` will be set to the value of `ANON_KEY`.
 
-### User Configuration
+#### Secrets Managers
 
-The user configuration file is located at `~/.config/secrets-machine/config.toml`. This is where you define the secrets source to use.
-For now, only the system keyring and Bitwarden are supported.
+By default, a Bitwarden secrets manager is added to the user configuration which expects a `BWS_ACCESS_TOKEN` environment variable. You can add/remove secrets managers by editing the `~/.config/secrets-machine/config.toml` file or the `secrets_machine.toml` file at the root of your project.
 
-### Secrets Sources
+We recommend using the keyring to store the `BWS_ACCESS_TOKEN` environment variable. You can do this with the following command:
 
-#### Keyring
+```sh
+sm secret add BWS_ACCESS_TOKEN
+```
 
-You can always add secrets to the keyring with the `sm secret add` command. For example:
+##### Bitwarden Secrets Manager
+
+You can add [Bitwarden Secrets Managers](https://bitwarden.com/products/secrets-manager/) to the configuration file with the following format:
+
+```toml
+[[secrets_sources]]
+  name              = "bitwarden"
+  access_token_name = "BWS_ACCESS_TOKEN"
+```
+
+### Keyring
+
+You can always store secrets locally with the `sm secret add` command. These are encrypted using the system keyring and will be available any time you use secrets machine.
+
+For example:
 
 ```sh
 sm secret add GITHUB_USERNAME <github-username>
 sm secret add GITHUB_TOKEN
-```
-
-#### Bitwarden Secret Manager
-
-To use the bitwarden secret manager, you need to have the BWS_ACCESS_TOKEN variable set. We recommend using the keyring to store this token. You can do this with the following command:
-
-```sh
-sm secret add BWS_ACCESS_TOKEN
 ```
 
 ## Suggestions

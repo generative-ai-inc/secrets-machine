@@ -1,4 +1,4 @@
-use std::{env, error::Error, path::PathBuf};
+use std::{collections::HashMap, env, error::Error, path::PathBuf};
 
 use sm::{
     library::system::{full_config, project_config, user_config},
@@ -10,8 +10,9 @@ use tokio::fs;
 ///
 /// # Errors
 #[allow(dead_code)]
-pub async fn setup(use_bw: bool) -> Result<(FullConfig, serde_json::Value), Box<dyn Error>> {
-    dotenvy::dotenv().ok();
+pub async fn setup(
+    use_bw: bool,
+) -> Result<(FullConfig, HashMap<String, (String, String)>), Box<dyn Error>> {
     env::set_var("TEST_ENV_VAR", "beautiful");
     // Make test_results directory
     if let Err(e) = fs::create_dir_all("tests/test_results").await {
@@ -31,10 +32,10 @@ pub async fn setup(use_bw: bool) -> Result<(FullConfig, serde_json::Value), Box<
     let user_config = user_config::parse(Some(user_config_path)).await;
     let full_config = full_config::get(&project_config, &user_config).await;
 
-    let Ok(secrets) = get_mock_secrets().await else {
+    let Ok(mocked_keyring_env_vars_map) = get_mock_secrets().await else {
         return Err(Box::from("Failed to get mock secrets"));
     };
-    Ok((full_config, secrets))
+    Ok((full_config, mocked_keyring_env_vars_map))
 }
 
 /// Cleans up the test environment
@@ -78,12 +79,28 @@ pub async fn assert_text_result(
 /// # Errors
 /// - If the file cannot be read
 /// - If the file cannot be parsed as JSON
+///
+/// # Panics
+/// - If the file cannot be read
+/// - If the file cannot be parsed as JSON
 #[allow(dead_code)]
-pub async fn get_mock_secrets() -> Result<serde_json::Value, Box<dyn Error>> {
+pub async fn get_mock_secrets() -> Result<HashMap<String, (String, String)>, Box<dyn Error>> {
     match fs::read_to_string("tests/assets/secrets.json").await {
         Ok(value) => {
             let secrets: serde_json::Value = serde_json::from_str(&value)?;
-            Ok(secrets)
+
+            let mut secrets_map = HashMap::new();
+            for (key, value) in secrets.as_object().unwrap() {
+                let secret_value = value.as_str().unwrap();
+
+                let secret_name = key.to_string();
+                secrets_map.insert(
+                    secret_name,
+                    (secret_value.to_string(), "keyring".to_string()),
+                );
+            }
+
+            Ok(secrets_map)
         }
         Err(e) => Err(Box::from(format!("Failed to read file: {e}"))),
     }

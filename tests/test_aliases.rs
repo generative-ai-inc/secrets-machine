@@ -3,12 +3,12 @@ use sm::library::commands::execute;
 mod common;
 
 async fn execute_test(echo_value: &str, test_name: &str) {
-    let (config, secrets) = common::setup(false).await.unwrap();
+    let (config, mocked_keyring_env_vars_map) = common::setup(false).await.unwrap();
 
     let _ = execute(
         &config,
-        &secrets,
         &format!("echo {echo_value} > tests/test_results/{test_name}.txt"),
+        Some(mocked_keyring_env_vars_map),
     )
     .await;
 }

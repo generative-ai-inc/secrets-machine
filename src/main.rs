@@ -67,11 +67,9 @@ async fn handle_run_mode(matches: ArgMatches) {
     // Check that the command is in the config
     commands::check(&full_config, &command_name).await;
 
-    let secrets = secrets_sources::keyring::get_secrets().await;
+    secrets_sources::check(&full_config).await;
 
-    secrets_sources::check(&full_config, &secrets).await;
-
-    match run(&full_config, &secrets, &command_name, &command_args).await {
+    match run(&full_config, &command_name, &command_args, None).await {
         Ok(()) => (),
         Err(e) => {
             // Only print the error log if there was an error on our side
@@ -111,11 +109,9 @@ async fn handle_exec_mode(matches: ArgMatches) {
 
     let full_config = full_config::get(&project_config, &config).await;
 
-    let secrets = secrets_sources::keyring::get_secrets().await;
+    secrets_sources::check(&full_config).await;
 
-    secrets_sources::check(&full_config, &secrets).await;
-
-    match execute(&full_config, &secrets, command_to_run.as_str()).await {
+    match execute(&full_config, &command_to_run, None).await {
         Ok(()) => (),
         Err(e) => {
             // Only print the error log if there was an error on our side

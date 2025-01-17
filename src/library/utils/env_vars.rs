@@ -2,16 +2,14 @@ use std::{collections::HashMap, env};
 
 use regex::Regex;
 
-use crate::library::{secrets_sources, utils::logging};
+use crate::library::utils::logging;
+use std::collections::BTreeMap;
 
-pub async fn print_variables_box<S: ::std::hash::BuildHasher>(
-    original_env_vars: HashMap<String, String, S>,
-    env_vars: &[(String, String, String)],
-) {
-    let env_vars = env_vars.to_owned();
+pub async fn print_variables_box(env_vars_map: &BTreeMap<String, (String, String)>) {
+    let env_vars_map = env_vars_map.to_owned();
 
     // If there are no environment variables, don't print anything
-    if env_vars.is_empty() {
+    if env_vars_map.is_empty() {
         return;
     }
 
@@ -19,11 +17,13 @@ pub async fn print_variables_box<S: ::std::hash::BuildHasher>(
     logging::print_color(logging::BG_BLUE, " Environment variables ").await;
 
     // We need to find the longest key so we can align the table
-    let longest_key = env_vars.iter().max_by_key(|(key, _, _)| key.len());
-    let longest_key_len = longest_key.map_or(0, |(key, _, _)| key.len());
+    let longest_key = env_vars_map.iter().max_by_key(|(key, _)| key.len());
+    let longest_key_len = longest_key.map_or(0, |(key, _)| key.len());
 
-    let longest_source_len = env_vars.iter().max_by_key(|(_, _, source)| source.len());
-    let longest_source_len = longest_source_len.map_or(0, |(_, _, source)| source.len());
+    let longest_source_len = env_vars_map
+        .iter()
+        .max_by_key(|(_, (_, source))| source.len());
+    let longest_source_len = longest_source_len.map_or(0, |(_, (_, source))| source.len());
 
     let key_margin = "─".to_string().repeat(longest_key_len);
     let source_margin = "─".to_string().repeat(longest_source_len);
@@ -43,30 +43,17 @@ pub async fn print_variables_box<S: ::std::hash::BuildHasher>(
     .await;
     logging::print_color(logging::NC, &format!("├─{key_margin}─┼─{source_margin}─┤")).await;
 
-    // Sort by key
-    let mut sorted_env_vars = env_vars.clone();
-    sorted_env_vars.sort_by_key(|(key, _, _)| key.clone());
-
-    for (key, _, source) in sorted_env_vars {
+    for (key, (_, source)) in env_vars_map {
         let parsed_key = format!(
             "{:<width$}",
             key.replace(' ', "\u{00A0}"),
             width = longest_key_len
         );
-        let mut parsed_source = format!(
+        let parsed_source = format!(
             "{:<width$}",
             source.replace(' ', "\u{00A0}"),
             width = longest_source_len
         );
-
-        // Check if the key is already set
-        if original_env_vars.contains_key(&key) {
-            parsed_source = format!(
-                "{:<width$}",
-                "local".replace(' ', "\u{00A0}"),
-                width = longest_source_len
-            );
-        }
 
         logging::print_color(logging::NC, &format!("│ {parsed_key} │ {parsed_source} │")).await;
     }
@@ -74,8 +61,8 @@ pub async fn print_variables_box<S: ::std::hash::BuildHasher>(
     logging::print_color(logging::NC, &format!("└─{key_margin}─┴─{source_margin}─┘")).await;
 }
 
-pub fn set(env_vars: &Vec<(String, String, String)>) {
-    for (key, value, _) in env_vars {
+pub fn set(env_vars_map: &BTreeMap<String, (String, String)>) {
+    for (key, (value, _)) in env_vars_map {
         // Only set if the variable is not already set in the environment
         if env::var(key).is_err() {
             env::set_var(key, value);
@@ -102,46 +89,64 @@ pub async fn verify_name(name: String) {
     }
 }
 
-pub async fn make_sure_exists(secrets: Option<&serde_json::Value>, name: &str) {
-    // If the secret is not set in the environment variables, check if it's set in the secrets file.
-    if std::env::var(name).is_err() {
-        let secrets_value = if let Some(secrets) = secrets {
-            secrets
-        } else {
-            &secrets_sources::keyring::get_secrets().await
-        };
-
-        if secrets_value.get(name).is_none() {
-            logging::error(&format!(
-                "Secret {name} is not set, please set it with `sm secret add {name}`. Alternatively, you can set it in your environment variables.",
-            ))
-            .await;
-            std::process::exit(1);
-        }
-    }
-}
-
 /// This function is only needed before the env variables are set.
 /// Once the variables are set we can simply use `env_vars::get`
-pub async fn get_from_all(secrets: &serde_json::Value, name: &str) -> String {
-    // First check if the secret is set in the environment variables
-    if let Ok(value) = std::env::var(name) {
-        return value;
+#[must_use]
+pub fn get_from_all(
+    name: &str,
+    aliases_env_vars: &HashMap<String, (String, String), std::hash::RandomState>,
+    local_env_vars: &HashMap<String, (String, String), std::hash::RandomState>,
+    process_env_vars: &HashMap<String, (String, String), std::hash::RandomState>,
+    keyring_env_vars: &HashMap<String, (String, String), std::hash::RandomState>,
+    sources_env_vars: &HashMap<String, (String, String), std::hash::RandomState>,
+) -> Option<String> {
+    if let Some(value) = aliases_env_vars.get(name) {
+        return Some(value.0.clone());
     }
 
-    if let Some(value) = secrets.get(name) {
-        if let Some(value) = value.as_str() {
-            return value.to_string();
-        }
-        logging::error(&format!("Failed to parse secret {name} from secrets file")).await;
-        std::process::exit(1);
+    if let Some(value) = local_env_vars.get(name) {
+        return Some(value.0.clone());
     }
 
-    logging::error(&format!(
-            "Secret {name} is not set, please set it with `sm secret add {name}`. Alternatively, you can set it in your environment variables.",
+    if let Some(value) = process_env_vars.get(name) {
+        return Some(value.0.clone());
+    }
+
+    if let Some(value) = sources_env_vars.get(name) {
+        return Some(value.0.clone());
+    }
+
+    if let Some(value) = keyring_env_vars.get(name) {
+        return Some(value.0.clone());
+    }
+
+    None
+}
+
+pub async fn get_or_exit(
+    name: &str,
+    aliases_env_vars: &HashMap<String, (String, String), std::hash::RandomState>,
+    local_env_vars: &HashMap<String, (String, String), std::hash::RandomState>,
+    process_env_vars: &HashMap<String, (String, String), std::hash::RandomState>,
+    keyring_env_vars: &HashMap<String, (String, String), std::hash::RandomState>,
+    sources_env_vars: &HashMap<String, (String, String), std::hash::RandomState>,
+) -> String {
+    let Some(value) = get_from_all(
+        name,
+        aliases_env_vars,
+        local_env_vars,
+        process_env_vars,
+        keyring_env_vars,
+        sources_env_vars,
+    ) else {
+        logging::error(&format!(
+            "Secret {name} is not set, please set it with `sm secret add {name}`. You can also set it in a .env file or in your environment variables.",
         ))
         .await;
-    std::process::exit(1);
+        std::process::exit(1);
+    };
+
+    value
 }
 
 pub async fn get(name: &str) -> String {
@@ -186,7 +191,7 @@ pub async fn replace(text: &str, redact: bool) -> String {
 
         // Asynchronously get the environment variable's value
         let value = if redact {
-            "[REDACTED]".to_string()
+            format!("[value of {var_name}]")
         } else {
             get(var_name).await
         };

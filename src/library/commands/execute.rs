@@ -1,4 +1,4 @@
-use std::{env, error::Error};
+use std::{collections::HashMap, env, error::Error};
 
 use tokio::process::Command;
 
@@ -21,10 +21,10 @@ use super::prepare;
 ///   - Never
 pub async fn execute(
     config: &FullConfig,
-    secrets: &serde_json::Value,
     command_to_run: &str,
+    mocked_keyring_env_vars_map: Option<HashMap<String, (String, String), std::hash::RandomState>>,
 ) -> Result<(), Box<dyn Error>> {
-    prepare(config, secrets).await;
+    prepare(config, mocked_keyring_env_vars_map).await;
 
     logging::nl().await;
     logging::print_color(logging::BG_GREEN, " Executing command ").await;

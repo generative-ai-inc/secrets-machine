@@ -10,7 +10,8 @@ use tokio::fs;
 ///
 /// # Errors
 #[allow(dead_code)]
-pub async fn setup() -> Result<(FullConfig, serde_json::Value), Box<dyn Error>> {
+pub async fn setup(use_bw: bool) -> Result<(FullConfig, serde_json::Value), Box<dyn Error>> {
+    dotenvy::dotenv().ok();
     env::set_var("TEST_ENV_VAR", "beautiful");
     // Make test_results directory
     if let Err(e) = fs::create_dir_all("tests/test_results").await {
@@ -18,12 +19,17 @@ pub async fn setup() -> Result<(FullConfig, serde_json::Value), Box<dyn Error>> 
             "Failed to create test_results directory: {e}"
         )));
     }
-    let commands_config_path = PathBuf::from("tests/assets/secrets_machine.toml");
-    let commands_config = project_config::parse(commands_config_path).await;
+    let mut project_config_path = PathBuf::from("tests/assets/secrets_machine.toml");
 
-    let config_path = PathBuf::from("tests/assets/secrets_machine.toml");
-    let config = user_config::parse(Some(config_path)).await;
-    let full_config = full_config::get(&commands_config, &config).await;
+    if use_bw {
+        project_config_path = PathBuf::from("tests/assets/secrets_machine_bw.toml");
+    }
+
+    let project_config = project_config::parse(project_config_path).await;
+
+    let user_config_path = PathBuf::from("tests/assets/user_config.toml");
+    let user_config = user_config::parse(Some(user_config_path)).await;
+    let full_config = full_config::get(&project_config, &user_config).await;
 
     let Ok(secrets) = get_mock_secrets().await else {
         return Err(Box::from("Failed to get mock secrets"));

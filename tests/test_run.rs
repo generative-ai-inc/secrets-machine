@@ -3,7 +3,7 @@ use sm::library::commands::run;
 mod common;
 
 async fn run_test(test_name: &str) {
-    let (config, secrets) = common::setup().await.unwrap();
+    let (config, secrets) = common::setup(false).await.unwrap();
 
     let _ = run(&config, &secrets, test_name, "").await;
 }

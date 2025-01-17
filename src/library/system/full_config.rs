@@ -19,7 +19,6 @@ async fn merge_secrets_sources(
             // Remove the source from the full secrets sources
             replaced_sources += 1;
             full_secrets_sources.remove(index);
-            full_secrets_sources.push(source.clone());
         }
 
         full_secrets_sources.push(source.clone());

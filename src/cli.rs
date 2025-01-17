@@ -1,13 +1,12 @@
 use clap::{arg, command, value_parser, Command};
 use clap::{ArgAction, ValueHint};
 use clap_complete::Shell;
-use dotenv::dotenv;
 use std::path::PathBuf;
 
 use crate::PROJECT_CONFIG_PATH_STR;
 
 pub fn build() -> Command {
-    dotenv().ok();
+    dotenvy::dotenv().ok();
 
     command!()
     .subcommand_value_name("command")

@@ -1,8 +1,8 @@
 use std::{env, error::Error, path::PathBuf};
 
 use sm::{
-    library::system::{commands_config, config},
-    models::{config::Config, project_config::ProjectConfig},
+    library::system::{full_config, project_config, user_config},
+    models::full_config::FullConfig,
 };
 use tokio::fs;
 
@@ -10,7 +10,7 @@ use tokio::fs;
 ///
 /// # Errors
 #[allow(dead_code)]
-pub async fn setup() -> Result<(ProjectConfig, Config, serde_json::Value), Box<dyn Error>> {
+pub async fn setup() -> Result<(FullConfig, serde_json::Value), Box<dyn Error>> {
     env::set_var("TEST_ENV_VAR", "beautiful");
     // Make test_results directory
     if let Err(e) = fs::create_dir_all("tests/test_results").await {
@@ -19,15 +19,16 @@ pub async fn setup() -> Result<(ProjectConfig, Config, serde_json::Value), Box<d
         )));
     }
     let commands_config_path = PathBuf::from("tests/assets/secrets_machine.toml");
-    let commands_config = commands_config::parse(commands_config_path).await;
+    let commands_config = project_config::parse(commands_config_path).await;
 
     let config_path = PathBuf::from("tests/assets/secrets_machine.toml");
-    let config = config::parse(Some(config_path)).await;
+    let config = user_config::parse(Some(config_path)).await;
+    let full_config = full_config::get(&commands_config, &config).await;
 
     let Ok(secrets) = get_mock_secrets().await else {
         return Err(Box::from("Failed to get mock secrets"));
     };
-    Ok((commands_config, config, secrets))
+    Ok((full_config, secrets))
 }
 
 /// Cleans up the test environment

@@ -29,5 +29,17 @@ jobs:
         with:
           shared-key: "test-${{ matrix.os }}"
 
+      - name: Install Bitwarden CLI
+        run: |
+          curl https://bws.bitwarden.com/install | sh
+
       - name: Run tests
         run: cargo test
+
+      - name: Run Compiled Tests
+        env:
+          BWS_ACCESS_TOKEN: ${{ secrets.BWS_ACCESS_TOKEN }}
+        run: |
+          chmod +x tests/compiled/test_all.sh
+          chmod +x tests/compiled/eval_command.sh
+          tests/compiled/test_all.sh "cargo run --"

@@ -12,7 +12,7 @@ pub async fn parse(config_path: PathBuf) -> ProjectConfig {
     let toml_content = match toml_content {
         Ok(content) => content,
         Err(e) => {
-            logging::error(&format!("Error reading commands config file: {e}")).await;
+            logging::error(&format!("Error reading project config file: {e}")).await;
             std::process::exit(1);
         }
     };
@@ -23,7 +23,7 @@ pub async fn parse(config_path: PathBuf) -> ProjectConfig {
     let config: ProjectConfig = match config_result {
         Ok(parsed_config) => parsed_config,
         Err(e) => {
-            logging::error(&format!("Error parsing commands config file: {e}")).await;
+            logging::error(&format!("Error parsing project config file: {e}")).await;
             std::process::exit(1);
         }
     };

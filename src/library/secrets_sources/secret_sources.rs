@@ -2,15 +2,12 @@ use std::collections::HashMap;
 
 use crate::{
     library::utils::env_vars,
-    models::{
-        config::{Config, SecretsSource},
-        project_config::ProjectConfig,
-    },
+    models::{full_config::FullConfig, secret_source::SecretsSource},
 };
 
 use super::{aliases, bitwarden, keyring};
 
-pub async fn check(config: &Config, secrets: &serde_json::Value) {
+pub async fn check(config: &FullConfig, secrets: &serde_json::Value) {
     for secrets_source in &config.secrets_sources {
         match secrets_source {
             SecretsSource::Bitwarden(credentials) => {
@@ -21,7 +18,7 @@ pub async fn check(config: &Config, secrets: &serde_json::Value) {
     }
 }
 
-pub async fn sync(project_config: &ProjectConfig, config: &Config, secrets: &serde_json::Value) {
+pub async fn sync(config: &FullConfig, secrets: &serde_json::Value) {
     let vars_iter = std::env::vars();
 
     let mut original_env_vars: HashMap<String, String> = HashMap::new();
@@ -49,7 +46,7 @@ pub async fn sync(project_config: &ProjectConfig, config: &Config, secrets: &ser
     // Set the environment variables to the current process
     env_vars::set(&env_vars);
 
-    let alias_env_vars = aliases::add(project_config).await;
+    let alias_env_vars = aliases::add(config).await;
 
     // Set the aliases to the current process
     env_vars::set(&alias_env_vars);

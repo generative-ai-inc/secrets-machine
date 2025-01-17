@@ -6,7 +6,7 @@ use sm::library::commands::{execute, run};
 use sm::library::config::commands;
 use sm::library::secrets::generic;
 use sm::library::secrets_sources;
-use sm::library::system::{commands_config, config};
+use sm::library::system::{full_config, project_config, user_config};
 use sm::library::utils::{env_vars, logging, updater};
 use std::io;
 use std::path::PathBuf;
@@ -15,18 +15,14 @@ mod cli;
 
 // Use lazy_static to avoid leaking string in an uncontrolled way
 lazy_static! {
-    pub static ref COMMANDS_CONFIG_PATH: PathBuf = PathBuf::from("secrets_machine.toml");
-    pub static ref COMMANDS_CONFIG_PATH_STR: &'static str = Box::leak(
-        COMMANDS_CONFIG_PATH
+    pub static ref PROJECT_CONFIG_PATH: PathBuf = PathBuf::from("secrets_machine.toml");
+    pub static ref PROJECT_CONFIG_PATH_STR: &'static str = Box::leak(
+        PROJECT_CONFIG_PATH
             .to_str()
             .unwrap()
             .to_string()
             .into_boxed_str()
     );
-    pub static ref CONFIG_PATH: Option<PathBuf> = None;
-    pub static ref BIND_ADDRESS: String = "127.0.0.1:8000".to_string();
-    pub static ref BIND_ADDRESS_STR: &'static str =
-        Box::leak(BIND_ADDRESS.clone().into_boxed_str());
 }
 
 fn print_completions<G: Generator>(gen: G, cmd: &mut Command) {
@@ -35,12 +31,16 @@ fn print_completions<G: Generator>(gen: G, cmd: &mut Command) {
 
 async fn handle_run_mode(matches: ArgMatches) {
     // Run options
-    let project_config_path = COMMANDS_CONFIG_PATH.clone();
+    let mut project_config_path = PROJECT_CONFIG_PATH.clone();
 
     let mut command_args = String::new();
 
     let mut command_name: String = String::new();
     if let Some(run_matches) = matches.subcommand_matches("run") {
+        if let Some(config_path) = run_matches.get_one::<PathBuf>("config") {
+            project_config_path.clone_from(config_path);
+        }
+
         if let Some(passed_command_name) = run_matches.get_one::<String>("command_name") {
             passed_command_name.clone_into(&mut command_name);
             logging::info(&format!("Command: {passed_command_name}")).await;
@@ -56,18 +56,22 @@ async fn handle_run_mode(matches: ArgMatches) {
         }
     }
 
-    let project_config = commands_config::parse(project_config_path).await;
+    logging::info(&format!("Project config path: {project_config_path:?}")).await;
 
-    let config = config::parse(None).await;
+    let project_config = project_config::parse(project_config_path).await;
+
+    let config = user_config::parse(None).await;
+
+    let full_config = full_config::get(&project_config, &config).await;
 
     // Check that the command is in the config
-    commands::check(&project_config, &command_name).await;
+    commands::check(&full_config, &command_name).await;
 
     let secrets = secrets_sources::keyring::get_secrets().await;
 
-    secrets_sources::check(&config, &secrets).await;
+    secrets_sources::check(&full_config, &secrets).await;
 
-    match run(project_config, config, secrets, command_name, command_args).await {
+    match run(&full_config, &secrets, &command_name, &command_args).await {
         Ok(()) => (),
         Err(e) => {
             // Only print the error log if there was an error on our side
@@ -82,11 +86,15 @@ async fn handle_run_mode(matches: ArgMatches) {
 
 async fn handle_exec_mode(matches: ArgMatches) {
     // Run options
-    let project_config_path = COMMANDS_CONFIG_PATH.clone();
+    let mut project_config_path = PROJECT_CONFIG_PATH.clone();
 
     let mut command_to_run: String = String::new();
 
     if let Some(exec_matches) = matches.subcommand_matches("exec") {
+        if let Some(config_path) = exec_matches.get_one::<PathBuf>("config") {
+            project_config_path.clone_from(config_path);
+        }
+
         if let Some(passed_command_to_run) = exec_matches.get_one::<String>("command") {
             passed_command_to_run.clone_into(&mut command_to_run);
         } else {
@@ -95,15 +103,19 @@ async fn handle_exec_mode(matches: ArgMatches) {
         }
     }
 
-    let project_config = commands_config::parse(project_config_path).await;
+    logging::info(&format!("Project config path: {project_config_path:?}")).await;
 
-    let config = config::parse(None).await;
+    let project_config = project_config::parse(project_config_path).await;
+
+    let config = user_config::parse(None).await;
+
+    let full_config = full_config::get(&project_config, &config).await;
 
     let secrets = secrets_sources::keyring::get_secrets().await;
 
-    secrets_sources::check(&config, &secrets).await;
+    secrets_sources::check(&full_config, &secrets).await;
 
-    match execute(project_config, config, secrets, command_to_run.as_str()).await {
+    match execute(&full_config, &secrets, command_to_run.as_str()).await {
         Ok(()) => (),
         Err(e) => {
             // Only print the error log if there was an error on our side

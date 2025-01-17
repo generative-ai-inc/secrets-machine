@@ -3,12 +3,11 @@ use sm::library::commands::execute;
 mod common;
 
 async fn execute_test(echo_value: &str, test_name: &str) {
-    let (project_config, config, secrets) = common::setup().await.unwrap();
+    let (config, secrets) = common::setup().await.unwrap();
 
     let _ = execute(
-        project_config,
-        config,
-        secrets,
+        &config,
+        &secrets,
         &format!("echo {echo_value} > tests/test_results/{test_name}.txt"),
     )
     .await;

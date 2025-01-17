@@ -1,3 +1,4 @@
 pub mod command;
-pub mod commands_config;
-pub mod config;
+pub mod full_config;
+pub mod project_config;
+pub mod user_config;

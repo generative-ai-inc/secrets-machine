@@ -4,7 +4,7 @@ use clap_complete::Shell;
 use dotenv::dotenv;
 use std::path::PathBuf;
 
-use crate::COMMANDS_CONFIG_PATH_STR;
+use crate::PROJECT_CONFIG_PATH_STR;
 
 pub fn build() -> Command {
     dotenv().ok();
@@ -23,7 +23,7 @@ pub fn build() -> Command {
             arg!(
                 -c --config <file> "Override the project configuration file to use."
             )
-            .default_value(*COMMANDS_CONFIG_PATH_STR)
+            .default_value(*PROJECT_CONFIG_PATH_STR)
             .required(false)
             .value_parser(value_parser!(PathBuf))
             .value_hint(ValueHint::AnyPath),
@@ -46,7 +46,7 @@ pub fn build() -> Command {
             arg!(
                 -c --config <file> "Override the project configuration file to use."
             )
-            .default_value(*COMMANDS_CONFIG_PATH_STR)
+            .default_value(*PROJECT_CONFIG_PATH_STR)
             .required(false)
             .value_parser(value_parser!(PathBuf))
             .value_hint(ValueHint::AnyPath),

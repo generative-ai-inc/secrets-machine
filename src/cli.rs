@@ -6,8 +6,6 @@ use std::path::PathBuf;
 use crate::PROJECT_CONFIG_PATH_STR;
 
 pub fn build() -> Command {
-    dotenvy::dotenv().ok();
-
     command!()
     .subcommand_value_name("command")
     .about("🔑 Secrets Machine is a tool for injecting secrets at runtime")

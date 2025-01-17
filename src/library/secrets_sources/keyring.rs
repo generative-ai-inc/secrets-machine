@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::library::utils::logging;
 use keyring::Entry;
 use serde_json::json;
@@ -63,10 +65,10 @@ pub async fn set_secret(secrets: serde_json::Value) {
     }
 }
 
-pub async fn get_env_variables(
-    keyring_secrets: &serde_json::Value,
-) -> Vec<(String, String, String)> {
-    let mut env_vars: Vec<(String, String, String)> = Vec::new();
+pub async fn get_env_variables() -> HashMap<String, (String, String)> {
+    let keyring_secrets = get_secrets().await;
+
+    let mut env_vars_map: HashMap<String, (String, String)> = HashMap::new();
 
     let Some(secrets_map) = keyring_secrets.as_object() else {
         logging::error("Secrets map not found").await;
@@ -76,11 +78,11 @@ pub async fn get_env_variables(
     // Add keyring secrets to the environment variables
     for (key, value) in secrets_map {
         if let Some(value) = value.as_str() {
-            env_vars.push((key.to_string(), value.to_string(), "keyring".to_string()));
+            env_vars_map.insert(key.to_string(), (value.to_string(), "keyring".to_string()));
         } else {
             logging::error(&format!("Failed to set secret {key} from keyring")).await;
         }
     }
 
-    env_vars
+    env_vars_map
 }

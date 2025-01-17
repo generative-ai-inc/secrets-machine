@@ -2,18 +2,18 @@ use sm::library::commands::{execute, run};
 mod common;
 
 async fn run_test(test_name: &str) {
-    let (config, secrets) = common::setup(true).await.unwrap();
+    let (config, mocked_keyring_env_vars_map) = common::setup(true).await.unwrap();
 
-    let _ = run(&config, &secrets, test_name, "").await;
+    let _ = run(&config, test_name, "", Some(mocked_keyring_env_vars_map)).await;
 }
 
 async fn execute_test(echo_value: &str, test_name: &str) {
-    let (config, secrets) = common::setup(true).await.unwrap();
+    let (config, mocked_keyring_env_vars_map) = common::setup(true).await.unwrap();
 
     let _ = execute(
         &config,
-        &secrets,
         &format!("echo {echo_value} > tests/test_results/{test_name}.txt"),
+        Some(mocked_keyring_env_vars_map),
     )
     .await;
 }

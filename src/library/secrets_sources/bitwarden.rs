@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::library::system;
 use crate::library::utils::{env_vars, logging};
 use crate::models::secret_source::BitwardenCredentials;
@@ -18,14 +20,21 @@ pub async fn check_installation() {
 }
 
 pub async fn get_env_variables(
-    credentials: Option<&BitwardenCredentials>,
-    secrets: &serde_json::Value,
-) -> Vec<(String, String, String)> {
-    let env_var_name = match credentials {
-        Some(credentials) => credentials.access_token_name.as_str(),
-        None => "BWS_ACCESS_TOKEN",
-    };
-    let access_token = env_vars::get_from_all(secrets, env_var_name).await;
+    credentials: &BitwardenCredentials,
+    local_env_vars: &HashMap<String, (String, String), std::hash::RandomState>,
+    process_env_vars: &HashMap<String, (String, String), std::hash::RandomState>,
+    keyring_env_vars: &HashMap<String, (String, String), std::hash::RandomState>,
+) -> HashMap<String, (String, String)> {
+    let env_var_name = credentials.access_token_name.as_str();
+    let access_token = env_vars::get_or_exit(
+        env_var_name,
+        &HashMap::with_capacity(0),
+        local_env_vars,
+        process_env_vars,
+        keyring_env_vars,
+        &HashMap::with_capacity(0),
+    )
+    .await;
 
     let bitwarden_result = Command::new("bws")
         .args([
@@ -47,22 +56,21 @@ pub async fn get_env_variables(
                         "Failed to create regex while retrieving bitwarden environment variables",
                     )
                     .await;
-                    return vec![];
+                    return HashMap::new();
                 };
 
                 let env_vars_str = String::from_utf8_lossy(&bitwarden_output.stdout);
-                let mut env_vars: Vec<(String, String, String)> = Vec::new();
+                let mut env_vars: HashMap<String, (String, String)> = HashMap::new();
 
                 for line in env_vars_str.lines() {
                     if let Some(caps) = re.captures(line) {
                         let key = &caps[1];
                         let value = &caps[2];
 
-                        env_vars.push((
+                        env_vars.insert(
                             key.to_string(),
-                            value.to_string(),
-                            "bitwarden".to_string(),
-                        ));
+                            (value.to_string(), "bitwarden".to_string()),
+                        );
                     }
                 }
 

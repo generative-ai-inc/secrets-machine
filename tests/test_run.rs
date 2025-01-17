@@ -3,9 +3,9 @@ use sm::library::commands::run;
 mod common;
 
 async fn run_test(test_name: &str) {
-    let (config, secrets) = common::setup(false).await.unwrap();
+    let (config, mocked_keyring_env_vars_map) = common::setup(false).await.unwrap();
 
-    let _ = run(&config, &secrets, test_name, "").await;
+    let _ = run(&config, test_name, "", Some(mocked_keyring_env_vars_map)).await;
 }
 
 #[tokio::test]

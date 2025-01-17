@@ -8,13 +8,19 @@ use crate::{
 use super::{aliases, bitwarden, keyring};
 
 pub async fn check(config: &FullConfig, secrets: &serde_json::Value) {
+    let mut check_bitwarden_installation = false;
+
     for secrets_source in &config.secrets_sources {
         match secrets_source {
             SecretsSource::Bitwarden(credentials) => {
                 env_vars::make_sure_exists(Some(secrets), &credentials.access_token_name).await;
-                bitwarden::check_installation().await;
+                check_bitwarden_installation = true;
             }
         }
+    }
+
+    if check_bitwarden_installation {
+        bitwarden::check_installation().await;
     }
 }
 

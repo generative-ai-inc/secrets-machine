@@ -1,6 +1,0 @@
-[general]
-  print_secrets_table = true
-
-[[secrets_sources]]
-  name              = "bitwarden"
-  access_token_name = "BWS_ACCESS_TOKEN"

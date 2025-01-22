@@ -39,7 +39,7 @@ jobs:
       - name: Run tests
         env:
           BWS_ACCESS_TOKEN: ${{ secrets.BWS_ACCESS_TOKEN }}
-        run: cargo test
+        run: cargo test -- --include-ignored
 
       - name: Run Compiled Tests
         env:

@@ -51,9 +51,7 @@ impl Default for UserConfig {
     fn default() -> Self {
         UserConfig {
             general: default_general(),
-            secrets_sources: vec![SecretsSource::Bitwarden(BitwardenCredentials {
-                access_token_name: "BWS_ACCESS_TOKEN".to_string(),
-            })],
+            secrets_sources: vec![],
             commands: HashMap::new(),
             pre_commands: HashMap::new(),
             aliases: HashMap::new(),

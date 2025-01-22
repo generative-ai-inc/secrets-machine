@@ -2,10 +2,7 @@ use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 
-use super::{
-    general_settings::General,
-    secret_source::{BitwardenCredentials, SecretsSource},
-};
+use super::{general_settings::General, secret_source::SecretsSource};
 
 fn default_general() -> General {
     General {

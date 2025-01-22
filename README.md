@@ -127,33 +127,41 @@ Similarly, `VITE_ANON_KEY` will be set to the value of `ANON_KEY`.
 
 #### Secrets Managers
 
-By default, a Bitwarden secrets manager is added to the user configuration which expects a `BWS_ACCESS_TOKEN` environment variable. You can add/remove secrets managers by editing the `~/.config/secrets-machine/config.toml` file or the `secrets_machine.toml` file at the root of your project.
+You can configure secrets managers in the `secrets_machine.toml` file at the root of each project.
 
-We recommend using the keyring to store the `BWS_ACCESS_TOKEN` environment variable. You can do this with the following command:
+Alternatively, you can configure them in the `~/.config/secrets-machine/config.toml` file to be used in all projects. We recommend using the keyring to store access tokens for secrets managers that are enabled in the user configuration so you don't have to manually add them to each project.
+
+You can do this with the following command:
 
 ```sh
-sm secret add BWS_ACCESS_TOKEN
+sm secret add MY_ACCESS_TOKEN
 ```
 
 ##### Bitwarden Secrets Manager
 
-You can add [Bitwarden Secrets Managers](https://bitwarden.com/products/secrets-manager/) to the configuration file with the following format:
+You can add one or more [Bitwarden Secrets Manager](https://bitwarden.com/products/secrets-manager/) sources to the configuration file with the following format:
 
 ```toml
 [[secrets_sources]]
   name              = "bitwarden"
   access_token_name = "BWS_ACCESS_TOKEN"
+
+[[secrets_sources]]
+  name              = "bitwarden"
+  access_token_name = "BWS_ACCESS_TOKEN_2"
 ```
 
 ### Keyring
 
-You can always store secrets locally with the `sm secret add` command. These are encrypted using the system keyring and will be available any time you use secrets machine.
+You can also store secrets locally with the `sm secret add` command. These are encrypted using the system keyring and will be available any time you use secrets machine.
 
 For example:
 
 ```sh
-sm secret add GITHUB_USERNAME <github-username>
 sm secret add GITHUB_TOKEN
+
+# or all at once with a single command
+sm secret add GITHUB_USERNAME <github-username>
 ```
 
 ## Suggestions
@@ -164,12 +172,10 @@ sm secret add GITHUB_TOKEN
 
 To add completions for zsh, execute the following:
 
-```
-
+```sh
 mkdir -p ${ZDOTDIR:-~}/.zsh_functions
 echo 'fpath+=${ZDOTDIR:-~}/.zsh_functions' >> ${ZDOTDIR:-~}/.zshrc
 sm completions zsh > ${ZDOTDIR:-~}/.zsh_functions/\_sm
-
 ```
 
 #### Other Shells

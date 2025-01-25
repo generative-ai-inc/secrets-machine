@@ -22,7 +22,7 @@ jobs:
             dependencies: |
               sudo apt-get update && sudo apt-get install -y gcc-aarch64-linux-gnu
           - os: macos-latest
-            targets: ["x86_64-apple-darwin", "aarch64-apple-darwin"]
+            targets: ["x86_64-apple-darwin", "arm64-apple-darwin"]
     runs-on: ${{ matrix.os }}
 
     steps:

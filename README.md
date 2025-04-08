@@ -1,6 +1,42 @@
-# Secrets Machine
+<div align="center">
+  <img src="./.github/images/secrets-machine.png" width="400"/>
+</div>
 
-Secrets Machine is a tool for injecting secrets into your environment at runtime. It is useful for CI/CD pipelines, local development, and other scenarios where you need to inject secrets into your environment in a secure, standardized way.
+<div align="center">
+<a href="https://img.shields.io/github/license/generative-ai-inc/secrets-machine?style=flat&logo=apache&labelColor=%23000000&color=%23ffffff">
+<img alt="GitHub License" src="https://img.shields.io/github/license/generative-ai-inc/secrets-machine?style=flat&logo=apache&labelColor=%23000000&color=%23ffffff">
+</a>
+<a href="https://github.com/generative-ai-inc/secrets-machine/actions/workflows/rust-clippy.yml?query=branch%3Amain">
+<img alt="GitHub Actions Workflow Status" src="https://img.shields.io/github/actions/workflow/status/generative-ai-inc/secrets-machine/rust-clippy.yml?branch=main&style=flat&logo=rust&label=Clippy&labelColor=%23000000">
+</a>
+<a href="https://github.com/generative-ai-inc/secrets-machine/actions/workflows/build.yml?query=branch%3Amain">
+<img alt="GitHub Actions Workflow Status" src="https://img.shields.io/github/actions/workflow/status/generative-ai-inc/secrets-machine/build.yml?branch=main&style=flat&logo=github&label=Build&labelColor=%23000000">
+</a>
+<a href="https://github.com/generative-ai-inc/secrets-machine/actions/workflows/test.yml?query=branch%3Amain">
+<img alt="GitHub Actions Workflow Status" src="https://img.shields.io/github/actions/workflow/status/generative-ai-inc/secrets-machine/test.yml?branch=main&style=flat&logo=github&label=Test&labelColor=%23000000">
+</a>
+<a href="https://github.com/generative-ai-inc/secrets-machine/actions/workflows/release.yml?query=branch%3Amain">
+<img alt="GitHub Actions Workflow Status" src="https://img.shields.io/github/actions/workflow/status/generative-ai-inc/secrets-machine/release.yml?style=flat&logo=github&label=Release&labelColor=%23000000">
+</a>
+<a href="https://github.com/generative-ai-inc/secrets-machine/actions/workflows/github-code-scanning/codeql?query=branch%3Amain">
+<img alt="GitHub Actions Workflow Status" src="https://img.shields.io/github/actions/workflow/status/generative-ai-inc/secrets-machine/github-code-scanning/codeql?style=flat&logo=github&label=CodeQL&labelColor=%23000000">
+</a>
+</div>
+
+<br />
+
+# Why Secrets Machine?
+
+Managing secrets across different environments and platforms can be challenging. Secrets Machine solves this by:
+
+- **Unified Access**: Get secrets from multiple sources with a single consistent interface
+- **Secure by Design**: Never store secrets in code or configuration files
+- **No Code Changes**: Works with existing applications without requiring code modifications
+- **Cross-Platform**: Works on MacOS and Linux with the same commands
+- **Developer-Friendly**: Simple CLI that integrates with your existing workflow
+- **CI/CD Ready**: Perfect for automation pipelines where secrets need to be injected at runtime
+
+Secrets Machine standardizes how you access secrets regardless of where they're stored, making your development process more secure and efficient.
 
 ## 😕 Without Secrets Machine
 

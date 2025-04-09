@@ -3,24 +3,12 @@
 </div>
 
 <div align="center">
-<a href="https://img.shields.io/github/license/generative-ai-inc/secrets-machine?style=flat&logo=apache&labelColor=%23000000&color=%23ffffff">
-<img alt="GitHub License" src="https://img.shields.io/github/license/generative-ai-inc/secrets-machine?style=flat&logo=apache&labelColor=%23000000&color=%23ffffff">
-</a>
-<a href="https://github.com/generative-ai-inc/secrets-machine/actions/workflows/rust-clippy.yml?query=branch%3Amain">
-<img alt="GitHub Actions Workflow Status" src="https://img.shields.io/github/actions/workflow/status/generative-ai-inc/secrets-machine/rust-clippy.yml?branch=main&style=flat&logo=rust&label=Clippy&labelColor=%23000000">
-</a>
-<a href="https://github.com/generative-ai-inc/secrets-machine/actions/workflows/build.yml?query=branch%3Amain">
-<img alt="GitHub Actions Workflow Status" src="https://img.shields.io/github/actions/workflow/status/generative-ai-inc/secrets-machine/build.yml?branch=main&style=flat&logo=github&label=Build&labelColor=%23000000">
-</a>
-<a href="https://github.com/generative-ai-inc/secrets-machine/actions/workflows/test.yml?query=branch%3Amain">
-<img alt="GitHub Actions Workflow Status" src="https://img.shields.io/github/actions/workflow/status/generative-ai-inc/secrets-machine/test.yml?branch=main&style=flat&logo=github&label=Test&labelColor=%23000000">
-</a>
-<a href="https://github.com/generative-ai-inc/secrets-machine/actions/workflows/release.yml?query=branch%3Amain">
-<img alt="GitHub Actions Workflow Status" src="https://img.shields.io/github/actions/workflow/status/generative-ai-inc/secrets-machine/release.yml?style=flat&logo=github&label=Release&labelColor=%23000000">
-</a>
-<a href="https://github.com/generative-ai-inc/secrets-machine/actions/workflows/github-code-scanning/codeql?query=branch%3Amain">
-<img alt="GitHub Actions Workflow Status" src="https://img.shields.io/github/actions/workflow/status/generative-ai-inc/secrets-machine/github-code-scanning/codeql?style=flat&logo=github&label=CodeQL&labelColor=%23000000">
-</a>
+<a href="https://github.com/generative-ai-inc/secrets-machine/blob/main/LICENSE"><img alt="GitHub License" src="https://img.shields.io/github/license/generative-ai-inc/secrets-machine?style=flat&logo=apache&labelColor=%23000000&color=%23ffffff"></a>
+<a href="https://github.com/generative-ai-inc/secrets-machine/actions/workflows/rust-clippy.yml?query=branch%3Amain"><img alt="GitHub Actions Workflow Status" src="https://img.shields.io/github/actions/workflow/status/generative-ai-inc/secrets-machine/rust-clippy.yml?branch=main&style=flat&logo=rust&label=Clippy&labelColor=%23000000"></a>
+<a href="https://github.com/generative-ai-inc/secrets-machine/actions/workflows/build.yml?query=branch%3Amain"><img alt="GitHub Actions Workflow Status" src="https://img.shields.io/github/actions/workflow/status/generative-ai-inc/secrets-machine/build.yml?branch=main&style=flat&logo=github&label=Build&labelColor=%23000000"></a>
+<a href="https://github.com/generative-ai-inc/secrets-machine/actions/workflows/test.yml?query=branch%3Amain"><img alt="GitHub Actions Workflow Status" src="https://img.shields.io/github/actions/workflow/status/generative-ai-inc/secrets-machine/test.yml?branch=main&style=flat&logo=github&label=Test&labelColor=%23000000"></a>
+<a href="https://github.com/generative-ai-inc/secrets-machine/actions/workflows/release.yml"><img alt="GitHub Actions Workflow Status" src="https://img.shields.io/github/actions/workflow/status/generative-ai-inc/secrets-machine/release.yml?style=flat&logo=github&label=Release&labelColor=%23000000"></a>
+<a href="https://github.com/generative-ai-inc/secrets-machine/actions/workflows/github-code-scanning/codeql?query=branch%3Amain"><img alt="GitHub Actions Workflow Status" src="https://img.shields.io/github/actions/workflow/status/generative-ai-inc/secrets-machine/github-code-scanning/codeql?style=flat&logo=github&label=CodeQL&labelColor=%23000000"></a>
 </div>
 
 <br />

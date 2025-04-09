@@ -22,7 +22,7 @@ jobs:
             dependencies: |
               sudo apt-get update && sudo apt-get install -y gcc-aarch64-linux-gnu
           - os: macos-latest
-            targets: ["x86_64-apple-darwin", "arm64-apple-darwin"]
+            targets: ["x86_64-apple-darwin", "aarch64-apple-darwin"]
     runs-on: ${{ matrix.os }}
 
     steps:
@@ -57,15 +57,21 @@ jobs:
         run: |
           mkdir -p artifacts
           for target in ${{ join(matrix.targets, ' ') }}; do
-            # Remove vendor names ('-apple' and '-unknown') from the target name
-            target_name=$(echo $target | sed 's/-apple//; s/-unknown//')
+            # First, determine the output name (what we want the binary to be called)
+            output_name=$target
 
-            # Remove platform names ('-gnu', 'musl') from the target name
-            target_name=$(echo $target_name | sed 's/-gnu//; s/-musl//')
+            # Replace aarch64 with arm64 in the output name
+            output_name=$(echo $output_name | sed 's/aarch64/arm64/')
 
-            echo "target_name: $target_name"
+            # Remove vendor names ('-apple' and '-unknown') from the output name
+            output_name=$(echo $output_name | sed 's/-apple//; s/-unknown//')
 
-            cp "target/$target/release/sm" "artifacts/secrets-machine-${target_name}"
+            # Remove platform names ('-gnu', 'musl') from the output name
+            output_name=$(echo $output_name | sed 's/-gnu//; s/-musl//')
+
+            echo "target: $target, output_name: $output_name"
+
+            cp "target/$target/release/sm" "artifacts/secrets-machine-${output_name}"
           done
 
       - name: Release

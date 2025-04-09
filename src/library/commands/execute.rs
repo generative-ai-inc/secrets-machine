@@ -3,11 +3,12 @@ use std::{collections::HashMap, env, error::Error};
 use tokio::process::Command;
 
 use crate::{
-    library::utils::{env_vars, logging},
+    library::{
+        secrets_sources,
+        utils::{env_vars, logging},
+    },
     models::full_config::FullConfig,
 };
-
-use super::prepare;
 
 /// Executes a command with the secrets machine
 ///
@@ -24,13 +25,13 @@ pub async fn execute(
     command_to_run: &str,
     mocked_keyring_env_vars_map: Option<HashMap<String, (String, String), std::hash::RandomState>>,
 ) -> Result<(), Box<dyn Error>> {
-    prepare(config, mocked_keyring_env_vars_map).await;
+    let env_vars_map = secrets_sources::sync(config, mocked_keyring_env_vars_map).await;
 
     logging::nl().await;
     logging::print_color(logging::BG_GREEN, " Executing command ").await;
     logging::info(&format!(
         "Executing: {}",
-        env_vars::replace(command_to_run, true).await
+        env_vars::replace(&env_vars_map, command_to_run, true).await
     ))
     .await;
 
@@ -43,7 +44,11 @@ pub async fn execute(
     let Ok(child) = Command::new(default_shell)
         .arg("-c")
         .arg(command_to_run)
-        .envs(env::vars())
+        .envs(
+            env_vars_map
+                .iter()
+                .map(|(key, value)| (key.as_str(), value.0.as_str())),
+        )
         .spawn()
     else {
         return Err(Box::from("Failed to execute command"));

@@ -4,13 +4,12 @@ use tokio::process::Command;
 
 use crate::{
     library::{
+        secrets_sources,
         system::command,
         utils::{env_vars, logging},
     },
     models::full_config::FullConfig,
 };
-
-use super::prepare;
 
 /// Runs a command specified in the config file with the secrets machine
 ///
@@ -25,7 +24,7 @@ pub async fn run(
     command_args: &str,
     mocked_keyring_env_vars_map: Option<HashMap<String, (String, String), std::hash::RandomState>>,
 ) -> Result<(), Box<dyn Error>> {
-    prepare(config, mocked_keyring_env_vars_map).await;
+    let env_vars_map = secrets_sources::sync(config, mocked_keyring_env_vars_map).await;
 
     if let Some(pre_command) = config.pre_commands.get(command_name) {
         let result = command::run(pre_command).await;
@@ -51,11 +50,20 @@ pub async fn run(
     logging::print_color(logging::BG_GREEN, " Running command ").await;
     logging::info(&format!(
         "Running: {}",
-        env_vars::replace(&full_command, true).await
+        env_vars::replace(&env_vars_map, &full_command, true).await
     ))
     .await;
 
-    let Ok(child) = Command::new("sh").arg("-c").arg(&full_command).spawn() else {
+    let Ok(child) = Command::new("sh")
+        .arg("-c")
+        .arg(&full_command)
+        .envs(
+            env_vars_map
+                .iter()
+                .map(|(key, value)| (key.as_str(), value.0.as_str())),
+        )
+        .spawn()
+    else {
         return Err(Box::from("Failed to execute command"));
     };
 

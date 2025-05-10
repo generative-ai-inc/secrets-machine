@@ -1,4 +1,4 @@
-use std::{collections::HashMap, env, error::Error, path::PathBuf};
+use std::{collections::HashMap, error::Error, path::PathBuf};
 
 use sm::{
     library::system::{full_config, project_config, user_config},
@@ -13,7 +13,6 @@ use tokio::fs;
 pub async fn setup(
     use_bw: bool,
 ) -> Result<(FullConfig, HashMap<String, (String, String)>), Box<dyn Error>> {
-    env::set_var("TEST_ENV_VAR", "beautiful");
     // Make test_results directory
     if let Err(e) = fs::create_dir_all("tests/test_results").await {
         return Err(Box::from(format!(

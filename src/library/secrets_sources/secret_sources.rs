@@ -109,7 +109,7 @@ fn produce_env_vars_map(
 pub async fn sync(
     config: &FullConfig,
     mocked_keyring_env_vars_map: Option<HashMap<String, (String, String), std::hash::RandomState>>,
-) {
+) -> BTreeMap<String, (String, String)> {
     let local_env_vars_map = local::get_env_variables();
     let process_env_vars_map = process::get_env_variables();
     let keyring_env_vars_map = match mocked_keyring_env_vars_map {
@@ -151,10 +151,9 @@ pub async fn sync(
         &keyring_env_vars_map,
     );
 
-    // Set the aliases to the current process
-    env_vars::set(&env_vars_map);
-
     if config.general.print_secrets_table {
         env_vars::print_variables_box(&env_vars_map).await;
     }
+
+    env_vars_map
 }

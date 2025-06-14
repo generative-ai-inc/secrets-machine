@@ -1,7 +1,7 @@
 use clap::{ArgMatches, Command};
-use clap_complete::{generate, Generator, Shell};
+use clap_complete::{Generator, Shell, generate};
 use lazy_static::lazy_static;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use sm::library::commands::{execute, run};
 use sm::library::config::commands;
 use sm::library::secrets::generic;
@@ -25,8 +25,13 @@ lazy_static! {
     );
 }
 
-fn print_completions<G: Generator>(gen: G, cmd: &mut Command) {
-    generate(gen, cmd, cmd.get_name().to_string(), &mut io::stdout());
+fn print_completions<G: Generator>(generator: G, cmd: &mut Command) {
+    generate(
+        generator,
+        cmd,
+        cmd.get_name().to_string(),
+        &mut io::stdout(),
+    );
 }
 
 async fn handle_run_mode(matches: ArgMatches) {

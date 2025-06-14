@@ -1,4 +1,4 @@
-use std::{collections::HashMap, env};
+use std::collections::HashMap;
 
 use regex::Regex;
 
@@ -61,15 +61,6 @@ pub async fn print_variables_box(env_vars_map: &BTreeMap<String, (String, String
     logging::print_color(logging::NC, &format!("└─{key_margin}─┴─{source_margin}─┘")).await;
 }
 
-pub fn set(env_vars_map: &BTreeMap<String, (String, String)>) {
-    for (key, (value, _)) in env_vars_map {
-        // Only set if the variable is not already set in the environment
-        if env::var(key).is_err() {
-            env::set_var(key, value);
-        }
-    }
-}
-
 pub async fn verify_name(name: String) {
     let regex_result = Regex::new(r"^[a-zA-Z0-9_]+$");
     let regex = match regex_result {
@@ -89,8 +80,7 @@ pub async fn verify_name(name: String) {
     }
 }
 
-/// This function is only needed before the env variables are set.
-/// Once the variables are set we can simply use `env_vars::get`
+/// Get an environment variable from all sources, in the right order.
 #[must_use]
 pub fn get_from_all(
     name: &str,
@@ -149,20 +139,12 @@ pub async fn get_or_exit(
     value
 }
 
-pub async fn get(name: &str) -> String {
-    if let Ok(value) = std::env::var(name) {
-        return value;
-    }
-
-    logging::error(&format!(
-            "Secret {name} is not set, please set it with `sm secret add {name}`. Alternatively, you can set it in your .env file.",
-        ))
-        .await;
-    std::process::exit(1);
-}
-
 /// Replaces the environment variables in the string with the actual values
-pub async fn replace(text: &str, redact: bool) -> String {
+pub async fn replace(
+    env_vars_map: &BTreeMap<String, (String, String)>,
+    text: &str,
+    redact: bool,
+) -> String {
     // Match $VAR_NAME or ${VAR_NAME}
     let regex_result = Regex::new(r"\$\{?(\w+)\}?");
     let Ok(re) = regex_result else {
@@ -186,14 +168,24 @@ pub async fn replace(text: &str, redact: bool) -> String {
 
         let var_name = &caps[1]; // The captured variable name
 
+        let value = env_vars_map.get(var_name).map(|(value, _)| value.clone());
+
         // Append the text before the current match
         result.push_str(&text[last_end..m.start()]);
 
         // Asynchronously get the environment variable's value
         let value = if redact {
-            format!("[value of {var_name}]")
+            if let Some(_value) = value {
+                format!("[value of {var_name}]")
+            } else {
+                format!("[unavailable value of {var_name}]")
+            }
         } else {
-            get(var_name).await
+            if let Some(value) = value {
+                value
+            } else {
+                format!("[unavailable value of {var_name}]")
+            }
         };
 
         // Append the retrieved value (or a default if None)
